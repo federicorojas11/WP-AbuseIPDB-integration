@@ -110,7 +110,6 @@ $detections = $detections_handler->get_detections(array(
                     </th>
                     <th><?php _e('Country', 'wp-abuseipdb-integration'); ?></th>
                     <th><?php _e('Action Taken', 'wp-abuseipdb-integration'); ?></th>
-                    <th><?php _e('Details', 'wp-abuseipdb-integration'); ?></th>
                     <th><?php _e('Actions', 'wp-abuseipdb-integration'); ?></th>
                 </tr>
             </thead>
@@ -167,13 +166,19 @@ $detections = $detections_handler->get_detections(array(
                                     <span class="aipdb-action-none"><?php _e('None', 'wp-abuseipdb-integration'); ?></span>
                                 <?php endif; ?>
                             </td>
-                            <td>
-                                <button type="button" class="button button-small aipdb-view-details" data-id="<?php echo intval($detection->id); ?>">
-                                    <?php _e('View', 'wp-abuseipdb-integration'); ?>
+                            <td class="aipdb-actions">                                
+                                <button type="button" 
+                                        class="button button-small aipdb-view-details" 
+                                        data-id="<?php echo esc_attr($detection->id); ?>">
+                                    <span class="dashicons dashicons-visibility"></span>
+                                    <?php _e('Details', 'wp-abuseipdb-integration'); ?>
                                 </button>
-                            </td>
-                            <td>
-                                <button type="button" class="button button-small button-link-delete aipdb-delete-detection" data-id="<?php echo intval($detection->id); ?>">
+
+                                <button type="button" 
+                                        class="button button-small button-link-delete aipdb-delete-detection" 
+                                        data-id="<?php echo esc_attr($detection->id); ?>"
+                                        data-ip="<?php echo esc_attr($detection->ip_address); ?>">
+                                    <span class="dashicons dashicons-trash"></span>
                                     <?php _e('Delete', 'wp-abuseipdb-integration'); ?>
                                 </button>
                             </td>
@@ -213,3 +218,244 @@ $detections = $detections_handler->get_detections(array(
         <div id="aipdb-detection-details"></div>
     </div>
 </div>
+
+<!-- Action buttons -->
+ <script type="text/javascript">
+jQuery(document).ready(function($) {
+    
+    // Obtener nonce del PHP
+    var aipdbNonce = '<?php echo wp_create_nonce('aipdb_admin_nonce'); ?>';
+    
+    // Manejar click en botón Delete
+    $(document).on('click', '.aipdb-delete-detection', function(e) {
+        e.preventDefault();
+        
+        var $button = $(this);
+        var detectionId = $button.data('id');
+        var detectionIP = $button.data('ip');
+        var $row = $button.closest('tr');
+        
+        // Confirmación
+        if (!confirm('<?php _e("¿Estás seguro de que deseas eliminar esta detección?", "wp-abuseipdb-integration"); ?>\n\nIP: ' + detectionIP)) {
+            return;
+        }
+        
+        // Deshabilitar botón y mostrar loading
+        $button.prop('disabled', true).html('<span class="spinner is-active" style="float:none;margin:0;"></span> <?php _e("Eliminando...", "wp-abuseipdb-integration"); ?>');
+        
+        // Petición AJAX
+        $.ajax({
+            url: ajaxurl,
+            type: 'POST',
+            data: {
+                action: 'aipdb_delete_detection',
+                id: detectionId,
+                nonce: aipdbNonce
+            },
+            success: function(response) {
+                if (response.success) {
+                    // Animar eliminación de la fila
+                    $row.fadeOut(500, function() {
+                        $(this).remove();
+                        
+                        // Actualizar contador total
+                        var currentTotal = parseInt($('.aipdb-total-count').text().match(/\d+/)[0]);
+                        $('.aipdb-total-count').text('<?php _e("Total: ", "wp-abuseipdb-integration"); ?>' + (currentTotal - 1) + ' <?php _e("detections", "wp-abuseipdb-integration"); ?>');
+                        
+                        // Verificar si quedan filas
+                        if ($('#aipdb-detections-table tbody tr').length === 0) {
+                            $('#aipdb-detections-table tbody').html('<tr><td colspan="9" style="text-align:center;padding:20px;"><?php _e("No detections found.", "wp-abuseipdb-integration"); ?></td></tr>');
+                        }
+                    });
+                    
+                    // Mostrar mensaje de éxito
+                    showNotification('success', response.data.message || '<?php _e("Detección eliminada correctamente", "wp-abuseipdb-integration"); ?>');
+                    
+                } else {
+                    // Error - restaurar botón
+                    $button.prop('disabled', false).html('<span class="dashicons dashicons-trash"></span> <?php _e("Delete", "wp-abuseipdb-integration"); ?>');
+                    showNotification('error', response.data.message || '<?php _e("Error al eliminar la detección", "wp-abuseipdb-integration"); ?>');
+                }
+            },
+            error: function(xhr, status, error) {
+                // Error de conexión - restaurar botón
+                $button.prop('disabled', false).html('<span class="dashicons dashicons-trash"></span> <?php _e("Delete", "wp-abuseipdb-integration"); ?>');
+                showNotification('error', '<?php _e("Error de conexión. Inténtalo de nuevo.", "wp-abuseipdb-integration"); ?>');
+                console.error('AJAX Error:', error);
+            }
+        });
+    });
+    
+    // Función para mostrar notificaciones
+    function showNotification(type, message) {
+        var noticeClass = type === 'success' ? 'notice-success' : 'notice-error';
+        var $notice = $('<div class="notice ' + noticeClass + ' is-dismissible" style="margin:15px 0;"><p>' + message + '</p></div>');
+        
+        // Insertar después del título
+        $('.wrap h1').after($notice);
+        
+        // Auto-hide después de 5 segundos
+        setTimeout(function() {
+            $notice.fadeOut(500, function() {
+                $(this).remove();
+            });
+        }, 5000);
+        
+        // Permitir cerrar manualmente
+        $notice.on('click', '.notice-dismiss', function() {
+            $notice.remove();
+        });
+    }
+    
+    // Manejar botón View Details
+    $(document).on('click', '.aipdb-view-details', function(e) {
+        e.preventDefault();
+        var detectionId = $(this).data('id');
+        
+        // Encontrar la fila y obtener datos
+        var $row = $(this).closest('tr');
+        var data = {
+            id: detectionId,
+            ip: $row.find('td:nth-child(3)').text().trim(),
+            date: $row.find('td:nth-child(2)').text().trim(),
+            eventType: $row.find('td:nth-child(4)').text().trim(),
+            threatLevel: $row.find('td:nth-child(5)').text().trim(),
+            score: $row.find('td:nth-child(6)').text().trim(),
+            country: $row.find('td:nth-child(7)').text().trim(),
+            action: $row.find('td:nth-child(8)').text().trim()
+        };
+        
+        // Mostrar modal con detalles (implementar según necesidades)
+        showDetailsModal(data);
+    });
+    
+    // Función para mostrar modal de detalles
+    function showDetailsModal(data) {
+        var modalContent = '<div class="aipdb-details-modal-overlay">' +
+            '<div class="aipdb-details-modal">' +
+                '<div class="aipdb-modal-header">' +
+                    '<h3><?php _e("Detalles de Detección", "wp-abuseipdb-integration"); ?> #' + data.id + '</h3>' +
+                    '<span class="aipdb-modal-close">&times;</span>' +
+                '</div>' +
+                '<div class="aipdb-modal-body">' +
+                    '<table class="aipdb-details-table">' +
+                        '<tr><td><strong><?php _e("IP Address:", "wp-abuseipdb-integration"); ?></strong></td><td>' + data.ip + '</td></tr>' +
+                        '<tr><td><strong><?php _e("Fecha:", "wp-abuseipdb-integration"); ?></strong></td><td>' + data.date + '</td></tr>' +
+                        '<tr><td><strong><?php _e("Tipo de Evento:", "wp-abuseipdb-integration"); ?></strong></td><td>' + data.eventType + '</td></tr>' +
+                        '<tr><td><strong><?php _e("Nivel de Amenaza:", "wp-abuseipdb-integration"); ?></strong></td><td>' + data.threatLevel + '</td></tr>' +
+                        '<tr><td><strong><?php _e("AbuseIPDB Score:", "wp-abuseipdb-integration"); ?></strong></td><td>' + data.score + '</td></tr>' +
+                        '<tr><td><strong><?php _e("País:", "wp-abuseipdb-integration"); ?></strong></td><td>' + data.country + '</td></tr>' +
+                        '<tr><td><strong><?php _e("Acción Tomada:", "wp-abuseipdb-integration"); ?></strong></td><td>' + data.action + '</td></tr>' +
+                    '</table>' +
+                '</div>' +
+            '</div>' +
+        '</div>';
+        
+        $('body').append(modalContent);
+        
+        // Cerrar modal
+        $(document).on('click', '.aipdb-modal-close, .aipdb-details-modal-overlay', function(e) {
+            if (e.target === this) {
+                $('.aipdb-details-modal-overlay').remove();
+            }
+        });
+    }
+});
+</script>
+
+<style>
+.aipdb-actions {
+    white-space: nowrap;
+}
+
+.aipdb-actions .button {
+    margin-right: 5px;
+    vertical-align: middle;
+}
+
+.aipdb-actions .dashicons {
+    width: 14px;
+    height: 14px;
+    font-size: 14px;
+    line-height: 1;
+    margin-right: 3px;
+}
+
+.button-link-delete {
+    color: #a00 !important;
+    border-color: #a00 !important;
+}
+
+.button-link-delete:hover {
+    background: #a00 !important;
+    color: #fff !important;
+}
+
+/* Modal styles */
+.aipdb-details-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.7);
+    z-index: 100000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.aipdb-details-modal {
+    background: #fff;
+    border-radius: 5px;
+    padding: 0;
+    max-width: 600px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+
+.aipdb-modal-header {
+    padding: 15px 20px;
+    border-bottom: 1px solid #ddd;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.aipdb-modal-header h3 {
+    margin: 0;
+    font-size: 16px;
+}
+
+.aipdb-modal-close {
+    font-size: 24px;
+    cursor: pointer;
+    color: #666;
+}
+
+.aipdb-modal-close:hover {
+    color: #000;
+}
+
+.aipdb-modal-body {
+    padding: 20px;
+}
+
+.aipdb-details-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.aipdb-details-table td {
+    padding: 8px 12px;
+    border-bottom: 1px solid #eee;
+    vertical-align: top;
+}
+
+.aipdb-details-table td:first-child {
+    width: 150px;
+    color: #555;
+}
+</style>

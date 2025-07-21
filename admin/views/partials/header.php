@@ -8,7 +8,7 @@ $is_premium = AIPDB_Core::is_premium_active();
 <div class="wrap aipdb-admin-wrap">
     <h1 class="aipdb-main-title">
         <span class="aipdb-icon dashicons dashicons-shield-alt"></span>
-        <?php _e('AbuseIPDB WP Integration', 'wp-abuseipdb-integration'); ?>
+        <?php _e('WP AbuseIPDB Integration', 'wp-abuseipdb-integration'); ?>
         <span class="aipdb-version">v<?php echo AIPDB_VERSION; ?></span>
         <?php if (!$is_premium): ?>
             <span class="aipdb-free-badge"><?php _e('FREE', 'wp-abuseipdb-integration'); ?></span>

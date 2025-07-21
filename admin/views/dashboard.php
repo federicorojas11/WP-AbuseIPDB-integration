@@ -1,6 +1,6 @@
 <?php
 /**
- * Vista: Dashboard – AbuseIPDB WP Integration
+ * Vista: Dashboard – WP AbuseIPDB Integration
  *
  * Se encarga de mostrar las métricas principales del plugin.
  *   – Estadísticas generales (consultas API, detecciones, etc.)

@@ -17,7 +17,7 @@ class AIPDB_Admin {
     public function add_admin_menu() {
         // Página principal
         $main_page = add_menu_page(
-            'AbuseIPDB WP Integration',
+            'WP AbuseIPDB Integration',
             'AbuseIPDB',
             'manage_options',
             'aipdb-dashboard',
@@ -208,7 +208,7 @@ class AIPDB_Admin {
             ?>
             <div class="notice notice-warning is-dismissible">
                 <p>
-                    <strong><?php _e('AbuseIPDB WP Integration:', 'wp-abuseipdb-integration'); ?></strong>
+                    <strong><?php _e('WP AbuseIPDB Integration:', 'wp-abuseipdb-integration'); ?></strong>
                     <?php _e('Para comenzar, configura tu API key de AbuseIPDB.', 'wp-abuseipdb-integration'); ?>
                     <a href="<?php echo admin_url('admin.php?page=aipdb-configuration'); ?>" class="button button-secondary">
                         <?php _e('Configurar ahora', 'wp-abuseipdb-integration'); ?>
