@@ -22,7 +22,7 @@ $current_tab = isset($_GET['tab']) ? sanitize_text_field($_GET['tab']) : 'option
         <?php if ($current_tab === 'options'): ?>
             <!-- Tab Options -->
             <form method="post" action="options.php" class="aipdb-options-form">
-                <?php settings_fields('AIPDB_Configuration_general'); ?>
+                <?php settings_fields('aipdb_configuration_general'); ?>
                 
                 <table class="form-table">
                     <tr>
@@ -186,7 +186,7 @@ $current_tab = isset($_GET['tab']) ? sanitize_text_field($_GET['tab']) : 'option
         <?php elseif ($current_tab === 'advanced'): ?>
             <!-- Tab Advanced -->
             <form method="post" action="options.php" class="aipdb-options-form">
-                <?php settings_fields('AIPDB_Configuration_advanced'); ?>
+                <?php settings_fields('aipdb_configuration_advanced'); ?>
                 
                 <table class="form-table">
                     <tr>

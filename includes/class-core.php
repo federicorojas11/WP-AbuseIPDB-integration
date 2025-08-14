@@ -119,24 +119,14 @@ class AIPDB_Core {
             $table_name = $wpdb->prefix . 'aipdb_detections';
             $wpdb->query("DROP TABLE IF EXISTS $table_name");
             
-            // Eliminar opciones
-            $options_to_delete = array(
-                'aipdb_api_key', 'aipdb_enabled', 'aipdb_abuse_threshold',
-                'aipdb_auto_report', 'aipdb_country_mode', 'aipdb_allowed_countries',
-                'aipdb_blocked_countries', 'aipdb_geo_provider',
-                // ... todas las opciones
-            );
-            
-            foreach ($options_to_delete as $option) {
-                delete_option($option);
-            }
+            // Eliminar todas las opciones del plugin
+            $wpdb->query("DELETE FROM $wpdb->options WHERE option_name LIKE 'aipdb_%'");
         }
     }
     
     private function load_dependencies() {
         require_once AIPDB_PLUGIN_PATH . 'includes/helper-functions.php';
         require_once AIPDB_PLUGIN_PATH . 'includes/class-abuseipdb-api.php';
-        require_once AIPDB_PLUGIN_PATH . 'includes/class-security-monitor.php';
         require_once AIPDB_PLUGIN_PATH . 'includes/class-geolocation.php';
         require_once AIPDB_PLUGIN_PATH . 'includes/class-security-rules.php';
         require_once AIPDB_PLUGIN_PATH . 'includes/class-license-manager.php';
@@ -151,11 +141,6 @@ class AIPDB_Core {
         // Inicializar admin
         if (is_admin()) {
             new AIPDB_Admin();
-        }
-        
-        // Inicializar monitor de seguridad independiente
-        if (get_option('aipdb_enabled', false)) {
-            new AIPDB_Security_Monitor();
         }
         
         // Mantenimiento diario

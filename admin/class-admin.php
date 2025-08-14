@@ -83,38 +83,42 @@ class AIPDB_Admin {
     }
     
     public function register_settings() {
-        // Configuraciones generales
-        register_setting('aipdb_general', 'aipdb_api_key');
-        register_setting('aipdb_general', 'aipdb_enabled');
-        register_setting('aipdb_general', 'aipdb_abuse_threshold');
-        register_setting('aipdb_general', 'aipdb_auto_report');
-        
-        // Configuraciones de países
+        // Country Settings
         register_setting('aipdb_countries', 'aipdb_country_mode');
         register_setting('aipdb_countries', 'aipdb_allowed_countries');
         register_setting('aipdb_countries', 'aipdb_blocked_countries');
         register_setting('aipdb_countries', 'aipdb_geo_provider');
         register_setting('aipdb_countries', 'aipdb_geo_api_key');
-        
-        // Configuraciones de monitoreo
+
+        // Security Rules Settings
         $monitor_options = array(
             'aipdb_monitor_login_failures', 'aipdb_monitor_suspicious_requests',
             'aipdb_monitor_comment_spam', 'aipdb_monitor_rest_api',
             'aipdb_monitor_xmlrpc', 'aipdb_monitor_user_registration',
             'aipdb_monitor_404_errors'
         );
-        
         foreach ($monitor_options as $option) {
             register_setting('aipdb_security_rules', $option);
         }
-        
-        // Configuraciones avanzadas
-        register_setting('AIPDB_Configuration', 'aipdb_cache_duration');
-        register_setting('AIPDB_Configuration', 'aipdb_rate_limit_daily');
-        register_setting('AIPDB_Configuration', 'aipdb_emergency_mode');
-        register_setting('AIPDB_Configuration', 'aipdb_whitelist_ips');
-        register_setting('AIPDB_Configuration', 'aipdb_enable_logging');
-        register_setting('AIPDB_Configuration', 'aipdb_log_retention_days');
+
+        // Configuration - General Tab
+        $general_options = [
+            'aipdb_api_key', 'aipdb_enabled', 'aipdb_abuse_threshold', 'aipdb_auto_report',
+            'aipdb_cache_duration', 'aipdb_rate_limit_daily', 'aipdb_enable_logging',
+            'aipdb_log_retention_days', 'aipdb_whitelist_ips'
+        ];
+        foreach ($general_options as $option) {
+            register_setting('aipdb_configuration_general', $option);
+        }
+
+        // Configuration - Advanced Tab
+        $advanced_options = [
+            'aipdb_emergency_mode', 'aipdb_debug_mode', 'aipdb_custom_user_agent',
+            'aipdb_remove_data_on_uninstall'
+        ];
+        foreach ($advanced_options as $option) {
+            register_setting('aipdb_configuration_advanced', $option);
+        }
     }
     
     public function enqueue_admin_scripts($hook) {
