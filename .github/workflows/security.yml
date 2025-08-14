@@ -40,9 +40,12 @@ jobs:
       run: vendor/bin/phpcs
 
     - name: OWASP Dependency-Check
-      uses: OWASP/dependency-check-action@v4
+      uses: dependency-check/Dependency-Check_Action@main
       with:
         project: 'wp-abuseipdb-integration'
         path: '.'
         format: 'HTML'
-        args: '--disableYarnAudit --disableNodeAudit'
+        args: >
+          --failOnCVSS 7
+          --enableRetired
+          --disableYarnAudit --disableNodeAudit
