@@ -25,7 +25,7 @@ $stats     = $dashboard->get_dashboard_stats();
 			<div class="aipdb-stat-icon dashicons dashicons-networking"></div>
 			<div class="aipdb-stat-content">
 				<h3><?php echo number_format( $stats['api_calls_today'] ); ?></h3>
-				<p><?php _e( 'API calls today', 'abuseipdb-wp-integration' ); ?></p>
+				<p><?php _e( 'API calls today', 'wp-abuseipdb-integration' ); ?></p>
 			</div>
 		</div>
 
@@ -33,7 +33,7 @@ $stats     = $dashboard->get_dashboard_stats();
 			<div class="aipdb-stat-icon dashicons dashicons-warning"></div>
 			<div class="aipdb-stat-content">
 				<h3><?php echo number_format( $stats['total_detections'] ); ?></h3>
-				<p><?php _e( 'Total detections', 'abuseipdb-wp-integration' ); ?></p>
+				<p><?php _e( 'Total detections', 'wp-abuseipdb-integration' ); ?></p>
 			</div>
 		</div>
 
@@ -41,7 +41,7 @@ $stats     = $dashboard->get_dashboard_stats();
 			<div class="aipdb-stat-icon dashicons dashicons-shield-alt"></div>
 			<div class="aipdb-stat-content">
 				<h3><?php echo number_format( $stats['blocked_ips'] ); ?></h3>
-				<p><?php _e( 'IPs blocked', 'abuseipdb-wp-integration' ); ?></p>
+				<p><?php _e( 'IPs blocked', 'wp-abuseipdb-integration' ); ?></p>
 			</div>
 		</div>
 
@@ -51,24 +51,24 @@ $stats     = $dashboard->get_dashboard_stats();
 				<h3>
 					<?php
 					echo 'ok' === $stats['api_status']
-						? __( 'Connected', 'abuseipdb-wp-integration' )
-						: __( 'Unknown', 'abuseipdb-wp-integration' );
+						? __( 'Connected', 'wp-abuseipdb-integration' )
+						: __( 'Unknown', 'wp-abuseipdb-integration' );
 					?>
 				</h3>
-				<p><?php _e( 'API status', 'abuseipdb-wp-integration' ); ?></p>
+				<p><?php _e( 'API status', 'wp-abuseipdb-integration' ); ?></p>
 			</div>
 		</div>
 	</div><!-- .aipdb-stats-grid -->
 
 	<!-- Configuración rápida -->
 	<div class="aipdb-quick-settings">
-		<h2><?php _e( 'Quick Setup', 'abuseipdb-wp-integration' ); ?></h2>
+		<h2><?php _e( 'Quick Setup', 'wp-abuseipdb-integration' ); ?></h2>
 
 		<form id="aipdb-quick-form" class="aipdb-quick-form">
 			<table class="form-table">
 				<tr>
 					<th scope="row">
-						<label for="aipdb_api_key"><?php _e( 'AbuseIPDB API Key', 'abuseipdb-wp-integration' ); ?></label>
+						<label for="aipdb_api_key"><?php _e( 'AbuseIPDB API Key', 'wp-abuseipdb-integration' ); ?></label>
 					</th>
 					<td>
 						<div class="aipdb-input-flex">
@@ -78,7 +78,7 @@ $stats     = $dashboard->get_dashboard_stats();
 								   value="<?php echo esc_attr( get_option( 'aipdb_api_key', '' ) ); ?>"
 								   class="regular-text" />
 							<button type="button" class="button aipdb-test-api">
-								<?php _e( 'Test Connection', 'abuseipdb-wp-integration' ); ?>
+								<?php _e( 'Test Connection', 'wp-abuseipdb-integration' ); ?>
 							</button>
 						</div>
 						<div id="aipdb-api-status-message"></div>
@@ -86,7 +86,7 @@ $stats     = $dashboard->get_dashboard_stats();
 				</tr>
 
 				<tr>
-					<th scope="row"><?php _e( 'Enable protection', 'abuseipdb-wp-integration' ); ?></th>
+					<th scope="row"><?php _e( 'Enable protection', 'wp-abuseipdb-integration' ); ?></th>
 					<td>
 						<label class="aipdb-switch">
 							<input type="checkbox"
@@ -100,7 +100,7 @@ $stats     = $dashboard->get_dashboard_stats();
 
 				<tr>
 					<th scope="row">
-						<label for="aipdb_abuse_threshold"><?php _e( 'Abuse Threshold', 'abuseipdb-wp-integration' ); ?></label>
+						<label for="aipdb_abuse_threshold"><?php _e( 'Abuse Threshold', 'wp-abuseipdb-integration' ); ?></label>
 					</th>
 					<td>
 						<input type="range"
@@ -118,7 +118,7 @@ $stats     = $dashboard->get_dashboard_stats();
 
 			<p class="submit">
 				<button type="submit" class="button-primary">
-					<?php _e( 'Save', 'abuseipdb-wp-integration' ); ?>
+					<?php _e( 'Save', 'wp-abuseipdb-integration' ); ?>
 				</button>
 			</p>
 		</form>
@@ -126,11 +126,11 @@ $stats     = $dashboard->get_dashboard_stats();
 
 	<!-- Actividad reciente -->
 	<div class="aipdb-recent-activity">
-		<h2><?php _e( 'Recent Activity', 'abuseipdb-wp-integration' ); ?></h2>
+		<h2><?php _e( 'Recent Activity', 'wp-abuseipdb-integration' ); ?></h2>
 
 		<?php $recent = $dashboard->get_recent_activity( 8 ); ?>
 		<?php if ( empty( $recent ) ) : ?>
-			<p><?php _e( 'No activity yet.', 'abuseipdb-wp-integration' ); ?></p>
+			<p><?php _e( 'No activity yet.', 'wp-abuseipdb-integration' ); ?></p>
 		<?php else : ?>
 			<ul class="aipdb-activity-list">
 				<?php foreach ( $recent as $item ) : ?>
@@ -141,7 +141,7 @@ $stats     = $dashboard->get_dashboard_stats();
 							<?php
 							echo esc_html( $item['ip'] ) . ' – ';
 							echo human_time_diff( $item['timestamp'], current_time( 'timestamp' ) ) . ' ';
-							_e( 'ago', 'abuseipdb-wp-integration' );
+							_e( 'ago', 'wp-abuseipdb-integration' );
 							?>
 						</small>
 					</li>

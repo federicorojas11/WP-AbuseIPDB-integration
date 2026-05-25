@@ -11,11 +11,24 @@ function aipdb_debug_log($message, $context = 'general') {
     
     $upload_dir = wp_upload_dir();
     $log_dir = $upload_dir['basedir'] . '/aipdb-logs';
-    
+
     if (!file_exists($log_dir)) {
         wp_mkdir_p($log_dir);
     }
-    
+
+    // Asegurar protección contra acceso público incluso si el directorio
+    // fue creado fuera del flujo de activación.
+    if (!file_exists($log_dir . '/.htaccess')) {
+        @file_put_contents(
+            $log_dir . '/.htaccess',
+            "<IfModule mod_authz_core.c>\n    Require all denied\n</IfModule>\n" .
+            "<IfModule !mod_authz_core.c>\n    Order deny,allow\n    Deny from all\n</IfModule>\n"
+        );
+    }
+    if (!file_exists($log_dir . '/index.php')) {
+        @file_put_contents($log_dir . '/index.php', "<?php\n// Silence is golden.\n");
+    }
+
     $log_file = $log_dir . '/debug-' . date('Y-m-d') . '.log';
     $timestamp = date('[Y-m-d H:i:s]');
     $log_entry = "{$timestamp} [{$context}] {$message}\n";
@@ -151,7 +164,6 @@ function aipdb_get_status_summary() {
     return array(
         'api_configured' => !empty(get_option('aipdb_api_key')),
         'plugin_enabled' => get_option('aipdb_enabled', false),
-        'premium_active' => AIPDB_Core::is_premium_active(),
         'api_calls_today' => get_transient('aipdb_daily_calls_' . date('Y-m-d')) ?: 0,
         'total_detections' => $total_detections,
         'recent_detections' => $recent_detections,

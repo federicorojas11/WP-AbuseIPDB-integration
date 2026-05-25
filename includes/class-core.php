@@ -2,9 +2,12 @@
 if (!defined('ABSPATH')) exit;
 
 class AIPDB_Core {
-    
+
     private static $instance = null;
-    
+
+    /** @var AIPDB_Admin|null */
+    public $admin = null;
+
     public static function get_instance() {
         if (null === self::$instance) {
             self::$instance = new self();
@@ -53,19 +56,11 @@ class AIPDB_Core {
             add_option($option_name, $default_value);
         }
         
-        // Crear directorio de logs
+        // Crear directorios de logs/data y protegerlos del acceso público
         $upload_dir = wp_upload_dir();
-        $logs_dir = $upload_dir['basedir'] . '/aipdb-logs';
-        if (!file_exists($logs_dir)) {
-            wp_mkdir_p($logs_dir);
-        }
-        
-        // Crear directorio de datos
-        $data_dir = $upload_dir['basedir'] . '/aipdb-data';
-        if (!file_exists($data_dir)) {
-            wp_mkdir_p($data_dir);
-        }
-        
+        self::protect_directory($upload_dir['basedir'] . '/aipdb-logs');
+        self::protect_directory($upload_dir['basedir'] . '/aipdb-data');
+
         // Crear tabla para detecciones
         self::create_detections_table();
         
@@ -75,6 +70,31 @@ class AIPDB_Core {
         }
     }
     
+    /**
+     * Crea un directorio dentro de uploads y lo bloquea para el acceso público
+     * vía .htaccess (Apache) e index.php (fallback para listings).
+     */
+    private static function protect_directory($path) {
+        if (!file_exists($path)) {
+            wp_mkdir_p($path);
+        }
+
+        $htaccess = $path . '/.htaccess';
+        if (!file_exists($htaccess)) {
+            file_put_contents(
+                $htaccess,
+                "# WP AbuseIPDB Integration: deny direct access\n" .
+                "<IfModule mod_authz_core.c>\n    Require all denied\n</IfModule>\n" .
+                "<IfModule !mod_authz_core.c>\n    Order deny,allow\n    Deny from all\n</IfModule>\n"
+            );
+        }
+
+        $index = $path . '/index.php';
+        if (!file_exists($index)) {
+            file_put_contents($index, "<?php\n// Silence is golden.\n");
+        }
+    }
+
     private static function create_detections_table() {
         global $wpdb;
         
@@ -129,8 +149,7 @@ class AIPDB_Core {
         require_once AIPDB_PLUGIN_PATH . 'includes/class-abuseipdb-api.php';
         require_once AIPDB_PLUGIN_PATH . 'includes/class-geolocation.php';
         require_once AIPDB_PLUGIN_PATH . 'includes/class-security-rules.php';
-        require_once AIPDB_PLUGIN_PATH . 'includes/class-license-manager.php';
-        
+
         // Cargar admin solo en admin
         if (is_admin()) {
             require_once AIPDB_PLUGIN_PATH . 'admin/class-admin.php';
@@ -140,7 +159,7 @@ class AIPDB_Core {
     private function init_hooks() {
         // Inicializar admin
         if (is_admin()) {
-            new AIPDB_Admin();
+            $this->admin = new AIPDB_Admin();
         }
         
         // Mantenimiento diario
@@ -184,8 +203,4 @@ class AIPDB_Core {
         );
     }
     
-    public static function is_premium_active() {
-        $license_manager = new AIPDB_License_Manager();
-        return $license_manager->is_license_valid();
-    }
 }

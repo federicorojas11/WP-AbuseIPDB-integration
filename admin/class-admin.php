@@ -2,15 +2,17 @@
 if (!defined('ABSPATH')) exit;
 
 class AIPDB_Admin {
-    
+
     private $pages = array();
-    
+
+    /** @var AIPDB_Security_Rules_Admin */
+    public $security_rules_admin;
+
     public function __construct() {
         add_action('admin_menu', array($this, 'add_admin_menu'));
-        add_action('admin_init', array($this, 'register_settings'));
         add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_scripts'));
         add_action('admin_notices', array($this, 'admin_notices'));
-        
+
         $this->load_admin_pages();
     }
     
@@ -26,7 +28,9 @@ class AIPDB_Admin {
             30
         );
         
-        // Subpáginas
+        // Subpáginas. El primer submenu con el mismo slug que el menú principal
+        // reemplaza al item auto-generado por add_menu_page para mostrar
+        // "Dashboard" en lugar de "AbuseIPDB".
         $subpages = array(
             array(
                 'parent_slug' => 'aipdb-dashboard',
@@ -82,45 +86,6 @@ class AIPDB_Admin {
         }
     }
     
-    public function register_settings() {
-        // Country Settings
-        register_setting('aipdb_countries', 'aipdb_country_mode');
-        register_setting('aipdb_countries', 'aipdb_allowed_countries');
-        register_setting('aipdb_countries', 'aipdb_blocked_countries');
-        register_setting('aipdb_countries', 'aipdb_geo_provider');
-        register_setting('aipdb_countries', 'aipdb_geo_api_key');
-
-        // Security Rules Settings
-        $monitor_options = array(
-            'aipdb_monitor_login_failures', 'aipdb_monitor_suspicious_requests',
-            'aipdb_monitor_comment_spam', 'aipdb_monitor_rest_api',
-            'aipdb_monitor_xmlrpc', 'aipdb_monitor_user_registration',
-            'aipdb_monitor_404_errors'
-        );
-        foreach ($monitor_options as $option) {
-            register_setting('aipdb_security_rules', $option);
-        }
-
-        // Configuration - General Tab
-        $general_options = [
-            'aipdb_api_key', 'aipdb_enabled', 'aipdb_abuse_threshold', 'aipdb_auto_report',
-            'aipdb_cache_duration', 'aipdb_rate_limit_daily', 'aipdb_enable_logging',
-            'aipdb_log_retention_days', 'aipdb_whitelist_ips'
-        ];
-        foreach ($general_options as $option) {
-            register_setting('aipdb_configuration_general', $option);
-        }
-
-        // Configuration - Advanced Tab
-        $advanced_options = [
-            'aipdb_emergency_mode', 'aipdb_debug_mode', 'aipdb_custom_user_agent',
-            'aipdb_remove_data_on_uninstall'
-        ];
-        foreach ($advanced_options as $option) {
-            register_setting('aipdb_configuration_advanced', $option);
-        }
-    }
-    
     public function enqueue_admin_scripts($hook) {
         // Solo cargar en nuestras páginas
         if (strpos($hook, 'aipdb-') === false) {
@@ -147,12 +112,26 @@ class AIPDB_Admin {
             'ajax_url' => admin_url('admin-ajax.php'),
             'nonce' => wp_create_nonce('aipdb_admin_nonce'),
             'current_page' => $this->get_current_page(),
-            'is_premium' => AIPDB_Core::is_premium_active(),
             'strings' => array(
-                'saving' => __('Guardando...', 'wp-abuseipdb-integration'),
-                'saved' => __('Guardado', 'wp-abuseipdb-integration'),
-                'error' => __('Error al guardar', 'wp-abuseipdb-integration'),
-            )
+                'saving' => __('Saving...', 'wp-abuseipdb-integration'),
+                'saved' => __('Saved.', 'wp-abuseipdb-integration'),
+                'error' => __('Could not save.', 'wp-abuseipdb-integration'),
+                'connecting' => __('Connecting...', 'wp-abuseipdb-integration'),
+                'test_connection' => __('Test Connection', 'wp-abuseipdb-integration'),
+                'api_key_required' => __('API Key required.', 'wp-abuseipdb-integration'),
+                'server_error' => __('Could not connect to server.', 'wp-abuseipdb-integration'),
+                'confirm_delete_detection' => __('Are you sure you want to delete this detection?', 'wp-abuseipdb-integration'),
+                'deleting' => __('Deleting...', 'wp-abuseipdb-integration'),
+                'no_detections' => __('No detections found.', 'wp-abuseipdb-integration'),
+                'details_title' => __('Detection details', 'wp-abuseipdb-integration'),
+                'label_ip' => __('IP Address:', 'wp-abuseipdb-integration'),
+                'label_date' => __('Date:', 'wp-abuseipdb-integration'),
+                'label_event_type' => __('Event Type:', 'wp-abuseipdb-integration'),
+                'label_threat_level' => __('Threat Level:', 'wp-abuseipdb-integration'),
+                'label_score' => __('AbuseIPDB Score:', 'wp-abuseipdb-integration'),
+                'label_country' => __('Country:', 'wp-abuseipdb-integration'),
+                'label_action' => __('Action Taken:', 'wp-abuseipdb-integration'),
+            ),
         ));
     }
     
@@ -201,7 +180,7 @@ class AIPDB_Admin {
         // Inicializar páginas
         new AIPDB_Dashboard();
         new AIPDB_Country_Blocking();
-        new AIPDB_Security_Rules_Admin();
+        $this->security_rules_admin = new AIPDB_Security_Rules_Admin();
         new AIPDB_Detections();
         new AIPDB_Configuration();
     }

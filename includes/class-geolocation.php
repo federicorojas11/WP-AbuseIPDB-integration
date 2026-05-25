@@ -2,7 +2,7 @@
 if (!defined('ABSPATH')) exit;
 
 class AIPDB_Geolocation {
-
+    
     private $db_path;
 
     public function __construct() {

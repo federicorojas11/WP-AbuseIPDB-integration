@@ -7,11 +7,11 @@ $current_tab = isset($_GET['tab']) ? sanitize_text_field($_GET['tab']) : 'option
 <div class="aipdb-options-page">
     <!-- Navegación de tabs -->
     <h2 class="nav-tab-wrapper">
-        <a href="<?php echo admin_url('admin.php?page=aipdb-options&tab=options'); ?>" 
+        <a href="<?php echo admin_url('admin.php?page=aipdb-configuration&tab=options'); ?>" 
            class="nav-tab <?php echo $current_tab === 'options' ? 'nav-tab-active' : ''; ?>">
             <?php _e('Options', 'wp-abuseipdb-integration'); ?>
         </a>
-        <a href="<?php echo admin_url('admin.php?page=aipdb-options&tab=advanced'); ?>" 
+        <a href="<?php echo admin_url('admin.php?page=aipdb-configuration&tab=advanced'); ?>" 
            class="nav-tab <?php echo $current_tab === 'advanced' ? 'nav-tab-active' : ''; ?>">
             <?php _e('Advanced', 'wp-abuseipdb-integration'); ?>
         </a>
