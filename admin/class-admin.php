@@ -1,6 +1,11 @@
 <?php
-if (!defined('ABSPATH')) exit;
+if (!defined('ABSPATH'))
+    exit;
 
+class AIPDB_Admin
+{
+
+<<<<<<< HEAD
 class AIPDB_Admin {
 
     private $pages = array();
@@ -9,14 +14,21 @@ class AIPDB_Admin {
     public $security_rules_admin;
 
     public function __construct() {
+=======
+    private $pages = array();
+
+    public function __construct()
+    {
+>>>>>>> 39b53601c2a9ab52dff675be235763be9898100c
         add_action('admin_menu', array($this, 'add_admin_menu'));
         add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_scripts'));
         add_action('admin_notices', array($this, 'admin_notices'));
 
         $this->load_admin_pages();
     }
-    
-    public function add_admin_menu() {
+
+    public function add_admin_menu()
+    {
         // Página principal
         $main_page = add_menu_page(
             'WP AbuseIPDB Integration',
@@ -27,10 +39,15 @@ class AIPDB_Admin {
             'dashicons-shield-alt',
             30
         );
+<<<<<<< HEAD
         
         // Subpáginas. El primer submenu con el mismo slug que el menú principal
         // reemplaza al item auto-generado por add_menu_page para mostrar
         // "Dashboard" en lugar de "AbuseIPDB".
+=======
+
+        // Subpáginas
+>>>>>>> 39b53601c2a9ab52dff675be235763be9898100c
         $subpages = array(
             array(
                 'parent_slug' => 'aipdb-dashboard',
@@ -46,6 +63,14 @@ class AIPDB_Admin {
                 'menu_title' => 'Country Blocking',
                 'capability' => 'manage_options',
                 'menu_slug' => 'aipdb-country-blocking',
+                'function' => array($this, 'display_admin_page')
+            ),
+            array(
+                'parent_slug' => 'aipdb-dashboard',
+                'page_title' => 'Blocked IPs - AbuseIPDB',
+                'menu_title' => 'Blocked IPs',
+                'capability' => 'manage_options',
+                'menu_slug' => 'aipdb-blocked-ips',
                 'function' => array($this, 'display_admin_page')
             ),
             array(
@@ -73,7 +98,7 @@ class AIPDB_Admin {
                 'function' => array($this, 'display_admin_page')
             )
         );
-        
+
         foreach ($subpages as $subpage) {
             add_submenu_page(
                 $subpage['parent_slug'],
@@ -85,20 +110,77 @@ class AIPDB_Admin {
             );
         }
     }
+<<<<<<< HEAD
     
     public function enqueue_admin_scripts($hook) {
+=======
+
+    public function register_settings()
+    {
+        // Country Settings
+        register_setting('aipdb_countries', 'aipdb_country_mode');
+        register_setting('aipdb_countries', 'aipdb_allowed_countries');
+        register_setting('aipdb_countries', 'aipdb_blocked_countries');
+        register_setting('aipdb_countries', 'aipdb_geo_provider');
+        register_setting('aipdb_countries', 'aipdb_geo_api_key');
+
+        // Security Rules Settings
+        $monitor_options = array(
+            'aipdb_monitor_login_failures',
+            'aipdb_monitor_suspicious_requests',
+            'aipdb_monitor_comment_spam',
+            'aipdb_monitor_rest_api',
+            'aipdb_monitor_xmlrpc',
+            'aipdb_monitor_user_registration',
+            'aipdb_monitor_404_errors'
+        );
+        foreach ($monitor_options as $option) {
+            register_setting('aipdb_security_rules', $option);
+        }
+
+        // Configuration - General Tab
+        $general_options = [
+            'aipdb_api_key',
+            'aipdb_enabled',
+            'aipdb_abuse_threshold',
+            'aipdb_auto_report',
+            'aipdb_cache_duration',
+            'aipdb_rate_limit_daily',
+            'aipdb_enable_logging',
+            'aipdb_log_retention_days',
+            'aipdb_whitelist_ips'
+        ];
+        foreach ($general_options as $option) {
+            register_setting('aipdb_configuration_general', $option);
+        }
+
+        // Configuration - Advanced Tab
+        $advanced_options = [
+            'aipdb_emergency_mode',
+            'aipdb_debug_mode',
+            'aipdb_custom_user_agent',
+            'aipdb_remove_data_on_uninstall'
+        ];
+        foreach ($advanced_options as $option) {
+            register_setting('aipdb_configuration_advanced', $option);
+        }
+    }
+
+    public function enqueue_admin_scripts($hook)
+    {
+>>>>>>> 39b53601c2a9ab52dff675be235763be9898100c
         // Solo cargar en nuestras páginas
         if (strpos($hook, 'aipdb-') === false) {
             return;
         }
-        
+
         wp_enqueue_style(
             'aipdb-admin-css',
             AIPDB_PLUGIN_URL . 'admin/css/admin.css',
             array(),
             AIPDB_VERSION
         );
-        
+
         wp_enqueue_script(
             'aipdb-admin-js',
             AIPDB_PLUGIN_URL . 'admin/js/admin.js',
@@ -106,7 +188,7 @@ class AIPDB_Admin {
             AIPDB_VERSION,
             true
         );
-        
+
         // Variables para JavaScript
         wp_localize_script('aipdb-admin-js', 'aipdb_admin', array(
             'ajax_url' => admin_url('admin-ajax.php'),
@@ -134,13 +216,14 @@ class AIPDB_Admin {
             ),
         ));
     }
-    
-    public function display_admin_page() {
+
+    public function display_admin_page()
+    {
         $current_page = $this->get_current_page();
-        
+
         // Header común
         include AIPDB_PLUGIN_PATH . 'admin/views/partials/header.php';
-        
+
         // Contenido específico de la página
         switch ($current_page) {
             case 'aipdb-dashboard':
@@ -148,6 +231,9 @@ class AIPDB_Admin {
                 break;
             case 'aipdb-country-blocking':
                 include AIPDB_PLUGIN_PATH . 'admin/views/country-blocking.php';
+                break;
+            case 'aipdb-blocked-ips':
+                include AIPDB_PLUGIN_PATH . 'admin/views/blocked-ips.php';
                 break;
             case 'aipdb-security-rules':
                 include AIPDB_PLUGIN_PATH . 'admin/views/security-rules.php';
@@ -161,22 +247,24 @@ class AIPDB_Admin {
             default:
                 include AIPDB_PLUGIN_PATH . 'admin/views/dashboard.php';
         }
-        
+
         // Footer común
         include AIPDB_PLUGIN_PATH . 'admin/views/partials/footer.php';
     }
-    
-    private function get_current_page() {
+
+    private function get_current_page()
+    {
         return isset($_GET['page']) ? sanitize_text_field($_GET['page']) : 'aipdb-dashboard';
     }
-    
-    private function load_admin_pages() {
+
+    private function load_admin_pages()
+    {
         require_once AIPDB_PLUGIN_PATH . 'admin/class-dashboard.php';
         require_once AIPDB_PLUGIN_PATH . 'admin/class-country-blocking.php';
         require_once AIPDB_PLUGIN_PATH . 'admin/class-security-rules-admin.php';
         require_once AIPDB_PLUGIN_PATH . 'admin/class-detections.php';
         require_once AIPDB_PLUGIN_PATH . 'admin/class-configuration.php';
-        
+
         // Inicializar páginas
         new AIPDB_Dashboard();
         new AIPDB_Country_Blocking();
@@ -184,8 +272,9 @@ class AIPDB_Admin {
         new AIPDB_Detections();
         new AIPDB_Configuration();
     }
-    
-    public function admin_notices() {
+
+    public function admin_notices()
+    {
         // Verificar si la API key está configurada
         if (!get_option('aipdb_api_key') && $this->is_aipdb_page()) {
             ?>
@@ -201,8 +290,9 @@ class AIPDB_Admin {
             <?php
         }
     }
-    
-    private function is_aipdb_page() {
+
+    private function is_aipdb_page()
+    {
         $current_screen = get_current_screen();
         return $current_screen && strpos($current_screen->id, 'aipdb-') !== false;
     }

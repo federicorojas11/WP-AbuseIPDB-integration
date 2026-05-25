@@ -44,6 +44,7 @@ jQuery(document).ready(function ($) {
         });
     });
 
+<<<<<<< HEAD
     /* ------------------------------------------------------------------
      * Threshold slider — live readout
      * ------------------------------------------------------------------ */
@@ -72,10 +73,26 @@ jQuery(document).ready(function ($) {
             aipdb_abuse_threshold: $form.find('[name="aipdb_abuse_threshold"]').val(),
             aipdb_auto_report: $form.find('[name="aipdb_auto_report"]').is(':checked') ? 1 : 0
         };
+=======
+    // Test IP Tool
+    $('.aipdb-check-ip').on('click', function() {
+        const button = $(this);
+        const ip = $('#aipdb_test_ip').val();
+        const resultContainer = $('#aipdb-test-ip-result');
+
+        if (!ip) {
+            alert('Please enter an IP address');
+            return;
+        }
+
+        button.prop('disabled', true).text('Checking...');
+        resultContainer.html('<p>Checking IP...</p>');
+>>>>>>> 39b53601c2a9ab52dff675be235763be9898100c
 
         $.ajax({
             url: aipdb_admin.ajax_url,
             type: 'POST',
+<<<<<<< HEAD
             data: payload,
             success: function (response) {
                 if (response.success) {
@@ -89,13 +106,49 @@ jQuery(document).ready(function ($) {
             },
             complete: function () {
                 $submit.prop('disabled', false).text(originalLabel);
+=======
+            data: {
+                action: 'aipdb_check_ip',
+                ip: ip,
+                nonce: aipdb_admin.nonce
+            },
+            success: function(response) {
+                if (response.success) {
+                    const data = response.data;
+                    let html = '<div class="notice notice-success inline"><p>';
+                    html += '<strong>Score: ' + data.score + '%</strong><br>';
+                    if (data.country) {
+                        html += 'Country: ' + data.country + '<br>';
+                    }
+                    html += 'Cached: ' + (data.cached ? 'Yes' : 'No');
+                    html += '</p></div>';
+                    resultContainer.html(html);
+                } else {
+                    resultContainer.html('<div class="notice notice-error inline"><p>' + response.data.message + '</p></div>');
+                }
+            },
+            error: function() {
+                resultContainer.html('<div class="notice notice-error inline"><p>Connection error</p></div>');
+            },
+            complete: function() {
+                button.prop('disabled', false).text('Check IP');
+>>>>>>> 39b53601c2a9ab52dff675be235763be9898100c
             }
         });
     });
 
+<<<<<<< HEAD
     /* ------------------------------------------------------------------
      * Helpers
      * ------------------------------------------------------------------ */
+=======
+    /**
+     * Muestra un mensaje debajo del campo de la API Key
+     * @param {string} msg 
+     * @param {'success'|'error'} type 
+     * @param {jQuery} container 
+     */
+>>>>>>> 39b53601c2a9ab52dff675be235763be9898100c
     function showAIPDBStatus(msg, type, container) {
         const color = type === 'success' ? '#d4edda' : '#f8d7da';
         const border = type === 'success' ? '#28a745' : '#dc3545';
