@@ -1,25 +1,17 @@
 <?php
-if (!defined('ABSPATH'))
+if (!defined('ABSPATH')) {
     exit;
+}
 
 class AIPDB_Core
 {
-
-<<<<<<< HEAD
-class AIPDB_Core {
-
     private static $instance = null;
 
     /** @var AIPDB_Admin|null */
     public $admin = null;
 
-    public static function get_instance() {
-=======
-    private static $instance = null;
-
     public static function get_instance()
     {
->>>>>>> 39b53601c2a9ab52dff675be235763be9898100c
         if (null === self::$instance) {
             self::$instance = new self();
         }
@@ -42,53 +34,34 @@ class AIPDB_Core {
             'aipdb_enabled' => false,
             'aipdb_abuse_threshold' => 70,
             'aipdb_auto_report' => false,
-            'aipdb_country_mode' => 'disabled',
-            'aipdb_allowed_countries' => array(),
-            'aipdb_blocked_countries' => array(),
-            'aipdb_geo_provider' => 'ip2location_lite',
 
-            // Eventos monitoreables 
-            'aipdb_monitor_login_failures' => true,
-            'aipdb_monitor_suspicious_requests' => true,
-            'aipdb_monitor_comment_spam' => false,
-            'aipdb_monitor_rest_api' => false,
-            'aipdb_monitor_xmlrpc' => false,
-            'aipdb_monitor_user_registration' => false,
-            'aipdb_monitor_404_errors' => false,
+            // Filtro por país (IP2Location → bypass de AbuseIPDB para países confiables)
+            'aipdb_enable_country_blocking' => 0,
+            'aipdb_trusted_countries' => array(),
 
-            // Configuraciones avanzadas
+            // Reglas de seguridad (eventos monitoreados)
+            'aipdb_enabled_events' => array(),
+
+            // Configuración general
             'aipdb_cache_duration' => 24,
             'aipdb_rate_limit_daily' => 900,
-            'aipdb_emergency_mode' => false,
             'aipdb_whitelist_ips' => '',
             'aipdb_enable_logging' => true,
             'aipdb_log_retention_days' => 30,
+            'aipdb_remove_data_on_uninstall' => false,
+
+            // Blocklist manual
+            'aipdb_manual_blocklist' => array(),
         );
 
         foreach ($default_options as $option_name => $default_value) {
             add_option($option_name, $default_value);
         }
-<<<<<<< HEAD
-        
+
         // Crear directorios de logs/data y protegerlos del acceso público
         $upload_dir = wp_upload_dir();
         self::protect_directory($upload_dir['basedir'] . '/aipdb-logs');
         self::protect_directory($upload_dir['basedir'] . '/aipdb-data');
-=======
-
-        // Crear directorio de logs
-        $upload_dir = wp_upload_dir();
-        $logs_dir = $upload_dir['basedir'] . '/aipdb-logs';
-        if (!file_exists($logs_dir)) {
-            wp_mkdir_p($logs_dir);
-        }
-
-        // Crear directorio de datos
-        $data_dir = $upload_dir['basedir'] . '/aipdb-data';
-        if (!file_exists($data_dir)) {
-            wp_mkdir_p($data_dir);
-        }
->>>>>>> 39b53601c2a9ab52dff675be235763be9898100c
 
         // Crear tabla para detecciones
         self::create_detections_table();
@@ -98,13 +71,13 @@ class AIPDB_Core {
             wp_schedule_event(time(), 'daily', 'aipdb_daily_maintenance');
         }
     }
-<<<<<<< HEAD
-    
+
     /**
      * Crea un directorio dentro de uploads y lo bloquea para el acceso público
      * vía .htaccess (Apache) e index.php (fallback para listings).
      */
-    private static function protect_directory($path) {
+    private static function protect_directory($path)
+    {
         if (!file_exists($path)) {
             wp_mkdir_p($path);
         }
@@ -125,16 +98,11 @@ class AIPDB_Core {
         }
     }
 
-    private static function create_detections_table() {
-=======
-
     private static function create_detections_table()
     {
->>>>>>> 39b53601c2a9ab52dff675be235763be9898100c
         global $wpdb;
 
         $table_name = $wpdb->prefix . 'aipdb_detections';
-
         $charset_collate = $wpdb->get_charset_collate();
 
         $sql = "CREATE TABLE $table_name (
@@ -162,21 +130,17 @@ class AIPDB_Core {
 
     public static function deactivate()
     {
-        // Limpiar tareas cron
         wp_clear_scheduled_hook('aipdb_daily_maintenance');
     }
 
     public static function uninstall()
     {
-        // Eliminar opciones si el usuario lo desea
         if (get_option('aipdb_remove_data_on_uninstall', false)) {
             global $wpdb;
 
-            // Eliminar tabla de detecciones
             $table_name = $wpdb->prefix . 'aipdb_detections';
             $wpdb->query("DROP TABLE IF EXISTS $table_name");
 
-            // Eliminar todas las opciones del plugin
             $wpdb->query("DELETE FROM $wpdb->options WHERE option_name LIKE 'aipdb_%'");
         }
     }
@@ -187,13 +151,8 @@ class AIPDB_Core {
         require_once AIPDB_PLUGIN_PATH . 'includes/class-abuseipdb-api.php';
         require_once AIPDB_PLUGIN_PATH . 'includes/class-geolocation.php';
         require_once AIPDB_PLUGIN_PATH . 'includes/class-security-rules.php';
-<<<<<<< HEAD
-=======
         require_once AIPDB_PLUGIN_PATH . 'includes/class-firewall.php';
-        require_once AIPDB_PLUGIN_PATH . 'includes/class-license-manager.php';
->>>>>>> 39b53601c2a9ab52dff675be235763be9898100c
 
-        // Cargar admin solo en admin
         if (is_admin()) {
             require_once AIPDB_PLUGIN_PATH . 'admin/class-admin.php';
         }
@@ -201,15 +160,13 @@ class AIPDB_Core {
 
     private function init_hooks()
     {
-        // Inicializar admin
         if (is_admin()) {
             $this->admin = new AIPDB_Admin();
         }
 
-        // Mantenimiento diario
         add_action('aipdb_daily_maintenance', array($this, 'daily_maintenance'));
 
-        // Inicializar Firewall
+        // Inicializar Firewall (decide internamente si engancha o no).
         AIPDB_Firewall::get_instance();
     }
 
@@ -230,9 +187,11 @@ class AIPDB_Core {
         $files = glob($logs_dir . '/*.log');
         $cutoff = time() - ($retention_days * DAY_IN_SECONDS);
 
-        foreach ($files as $file) {
-            if (filemtime($file) < $cutoff) {
-                unlink($file);
+        if (is_array($files)) {
+            foreach ($files as $file) {
+                if (filemtime($file) < $cutoff) {
+                    unlink($file);
+                }
             }
         }
 
@@ -246,19 +205,25 @@ class AIPDB_Core {
 
         // Limpiar transients antiguos
         $wpdb->query(
-            "DELETE FROM {$wpdb->options} 
-             WHERE option_name LIKE '_transient_aipdb_%' 
+            "DELETE FROM {$wpdb->options}
+             WHERE option_name LIKE '_transient_aipdb_%'
              OR option_name LIKE '_transient_timeout_aipdb_%'"
         );
-    }
-<<<<<<< HEAD
-    
-=======
 
-    public static function is_premium_active()
-    {
-        $license_manager = new AIPDB_License_Manager();
-        return $license_manager->is_license_valid();
+        // Limpiar manual blocklist de entradas expiradas (Fase 1)
+        $blocklist = get_option('aipdb_manual_blocklist', array());
+        if (is_array($blocklist) && !empty($blocklist)) {
+            $now = time();
+            $changed = false;
+            foreach ($blocklist as $ip => $entry) {
+                if (!empty($entry['expires_at']) && (int) $entry['expires_at'] < $now) {
+                    unset($blocklist[$ip]);
+                    $changed = true;
+                }
+            }
+            if ($changed) {
+                update_option('aipdb_manual_blocklist', $blocklist, false);
+            }
+        }
     }
->>>>>>> 39b53601c2a9ab52dff675be235763be9898100c
 }

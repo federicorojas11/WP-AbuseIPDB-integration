@@ -25,6 +25,8 @@ class AIPDB_Detections
             'event_type' => '',
             'threat_level' => '',
             'action_taken' => '',
+            'country' => '',
+            'min_score' => '',
             'date_from' => '',
             'date_to' => ''
         );
@@ -57,6 +59,16 @@ class AIPDB_Detections
         if (!empty($args['action_taken'])) {
             $where_clauses[] = "action_taken = %s";
             $where_values[] = $args['action_taken'];
+        }
+
+        if (!empty($args['country'])) {
+            $where_clauses[] = "country_code = %s";
+            $where_values[] = $args['country'];
+        }
+
+        if ($args['min_score'] !== '' && $args['min_score'] !== null) {
+            $where_clauses[] = "abuseipdb_score >= %d";
+            $where_values[] = intval($args['min_score']);
         }
 
         if (!empty($args['date_from'])) {
@@ -115,13 +127,42 @@ class AIPDB_Detections
             'search' => sanitize_text_field($_POST['search'] ?? ''),
             'event_type' => sanitize_text_field($_POST['event_type'] ?? ''),
             'threat_level' => sanitize_text_field($_POST['threat_level'] ?? ''),
+            'action_taken' => sanitize_text_field($_POST['action_taken'] ?? ''),
+            'country' => sanitize_text_field($_POST['country'] ?? ''),
+            'min_score' => (isset($_POST['min_score']) && $_POST['min_score'] !== '') ? intval($_POST['min_score']) : '',
             'date_from' => sanitize_text_field($_POST['date_from'] ?? ''),
             'date_to' => sanitize_text_field($_POST['date_to'] ?? '')
         );
 
         $detections = $this->get_detections($args);
 
+        // Enriquecer cada fila con datos derivados para el render en cliente.
+        if (!empty($detections['data'])) {
+            foreach ($detections['data'] as $row) {
+                $row->country_name = !empty($row->country_code) ? aipdb_get_country_name($row->country_code) : '';
+                $row->created_at_formatted = mysql2date(
+                    __('M j, Y g:i A', 'wp-abuseipdb-integration'),
+                    $row->created_at
+                );
+            }
+        }
+
         wp_send_json_success($detections);
+    }
+
+    /**
+     * Lista de códigos de país presentes en las detecciones, para el filtro.
+     */
+    public function get_distinct_countries()
+    {
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'aipdb_detections';
+
+        return $wpdb->get_col(
+            "SELECT DISTINCT country_code FROM $table_name
+             WHERE country_code IS NOT NULL AND country_code != ''
+             ORDER BY country_code ASC"
+        );
     }
 
     public function ajax_delete_detection()

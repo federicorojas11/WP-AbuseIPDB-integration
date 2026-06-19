@@ -6,9 +6,12 @@ $detections = $detections_handler->get_detections(array(
     'per_page' => 20,
     'page' => 1
 ));
+$available_countries = $detections_handler->get_distinct_countries();
 ?>
 
 <div class="aipdb-detections-page">
+    <h2 class="aipdb-page-heading" style="font-size:18px;margin:0 0 16px;"><?php _e('Firewall Log', 'wp-abuseipdb-integration'); ?></h2>
+
     <!-- Filtros -->
     <div class="aipdb-detections-filters">
         <div class="aipdb-filter-row">
@@ -39,6 +42,24 @@ $detections = $detections_handler->get_detections(array(
                     <option value="high"><?php _e('High', 'wp-abuseipdb-integration'); ?></option>
                     <option value="critical"><?php _e('Critical', 'wp-abuseipdb-integration'); ?></option>
                 </select>
+            </div>
+
+            <div class="aipdb-filter-group">
+                <label for="country-filter"><?php _e('Country:', 'wp-abuseipdb-integration'); ?></label>
+                <select id="country-filter">
+                    <option value=""><?php _e('All Countries', 'wp-abuseipdb-integration'); ?></option>
+                    <?php foreach ($available_countries as $cc): ?>
+                        <option value="<?php echo esc_attr($cc); ?>">
+                            <?php echo esc_html($cc . ' — ' . aipdb_get_country_name($cc)); ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+
+            <div class="aipdb-filter-group">
+                <label for="min-score-filter"><?php _e('Min Score:', 'wp-abuseipdb-integration'); ?></label>
+                <input type="number" id="min-score-filter" min="0" max="100" step="1"
+                       placeholder="0" style="width: 80px;" />
             </div>
 
             <div class="aipdb-filter-group">
@@ -175,6 +196,13 @@ $detections = $detections_handler->get_detections(array(
                                 </button>
 
                                 <button type="button"
+                                        class="button button-small aipdb-block-detection-ip"
+                                        data-ip="<?php echo esc_attr($detection->ip_address); ?>">
+                                    <span class="dashicons dashicons-shield-alt"></span>
+                                    <?php _e('Block IP', 'wp-abuseipdb-integration'); ?>
+                                </button>
+
+                                <button type="button"
                                         class="button button-small button-link-delete aipdb-delete-detection"
                                         data-id="<?php echo esc_attr($detection->id); ?>"
                                         data-ip="<?php echo esc_attr($detection->ip_address); ?>">
@@ -195,17 +223,15 @@ $detections = $detections_handler->get_detections(array(
         </table>
     </div>
 
-    <!-- Paginación -->
-    <?php if ($detections['pages'] > 1): ?>
-        <div class="aipdb-pagination">
-            <span class="displaying-num"><?php printf(__('%d items', 'wp-abuseipdb-integration'), $detections['total']); ?></span>
+    <!-- Paginación (el contenedor siempre existe; JS lo puebla y muestra/oculta) -->
+    <div class="aipdb-pagination" <?php echo $detections['pages'] > 1 ? '' : 'style="display:none;"'; ?>>
+        <span class="displaying-num"><?php printf(__('%d items', 'wp-abuseipdb-integration'), $detections['total']); ?></span>
 
-            <span class="pagination-links">
-                <?php for ($i = 1; $i <= $detections['pages']; $i++): ?>
-                    <button type="button" class="button aipdb-page-btn <?php echo $i === $detections['current_page'] ? 'current' : ''; ?>"
-                            data-page="<?php echo $i; ?>"><?php echo $i; ?></button>
-                <?php endfor; ?>
-            </span>
-        </div>
-    <?php endif; ?>
+        <span class="pagination-links">
+            <?php for ($i = 1; $i <= $detections['pages']; $i++): ?>
+                <button type="button" class="button aipdb-page-btn <?php echo $i === $detections['current_page'] ? 'current' : ''; ?>"
+                        data-page="<?php echo $i; ?>"><?php echo $i; ?></button>
+            <?php endfor; ?>
+        </span>
+    </div>
 </div>

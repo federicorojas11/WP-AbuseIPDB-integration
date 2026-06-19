@@ -9,7 +9,6 @@ class AIPDB_Dashboard
     {
         add_action('wp_ajax_aipdb_get_stats', array($this, 'ajax_get_stats'));
         add_action('wp_ajax_aipdb_test_api', array($this, 'ajax_test_api'));
-        add_action('wp_ajax_aipdb_save_quick_settings', array($this, 'ajax_save_quick_settings'));
         add_action('wp_ajax_aipdb_check_ip', array($this, 'ajax_check_ip'));
     }
 
@@ -66,48 +65,6 @@ class AIPDB_Dashboard
     }
 
     /**
-     * Guardar configuración rápida via AJAX
-     */
-    public function ajax_save_quick_settings()
-    {
-        check_ajax_referer('aipdb_admin_nonce', 'nonce');
-
-        if (!current_user_can('manage_options')) {
-            wp_die(__('Permission denied', 'wp-abuseipdb-integration'));
-        }
-
-        // Obtener y sanitizar datos
-        $settings = array(
-            'aipdb_api_key' => sanitize_text_field($_POST['aipdb_api_key'] ?? ''),
-            'aipdb_enabled' => isset($_POST['aipdb_enabled']) ? 1 : 0,
-            'aipdb_abuse_threshold' => intval($_POST['aipdb_abuse_threshold'] ?? 70),
-            'aipdb_auto_report' => isset($_POST['aipdb_auto_report']) ? 1 : 0
-        );
-
-        // Validar umbral
-        if ($settings['aipdb_abuse_threshold'] < 1 || $settings['aipdb_abuse_threshold'] > 100) {
-            wp_send_json_error(array('message' => __('Abuse threshold must be between 1 and 100', 'wp-abuseipdb-integration')));
-        }
-
-        // Guardar configuraciones
-        $saved = 0;
-        foreach ($settings as $option_name => $value) {
-            if (update_option($option_name, $value)) {
-                $saved++;
-            }
-        }
-
-        if ($saved > 0) {
-            wp_send_json_success(array(
-                'message' => __('Settings saved successfully', 'wp-abuseipdb-integration'),
-                'saved_count' => $saved
-            ));
-        } else {
-            wp_send_json_error(array('message' => __('No changes to save', 'wp-abuseipdb-integration')));
-        }
-    }
-
-    /**
      * Check IP manually via AJAX
      */
     public function ajax_check_ip()
@@ -145,9 +102,13 @@ class AIPDB_Dashboard
         $stats = array(
             'api_calls_today' => get_transient('aipdb_daily_calls_' . date('Y-m-d')) ?: 0,
             'api_calls_this_month' => $this->get_monthly_api_calls(),
+            'api_limit' => (int) get_option('aipdb_rate_limit_daily', 900),
             'total_detections' => 0,
             'recent_detections' => 0,
             'blocked_ips' => 0,
+            'blocked_count' => 0,
+            'blocked_today' => 0,
+            'avg_confidence' => 0,
             'api_status' => get_option('aipdb_api_status', 'unknown'),
             'last_check' => get_option('aipdb_last_api_check', 0),
             'plugin_enabled' => get_option('aipdb_enabled', false),
@@ -164,6 +125,15 @@ class AIPDB_Dashboard
             $stats['blocked_ips'] = $wpdb->get_var(
                 "SELECT COUNT(DISTINCT ip_address) FROM $table_name WHERE action_taken = 'blocked'"
             );
+            $stats['blocked_count'] = (int) $wpdb->get_var(
+                "SELECT COUNT(*) FROM $table_name WHERE action_taken = 'blocked'"
+            );
+            $stats['blocked_today'] = (int) $wpdb->get_var(
+                "SELECT COUNT(*) FROM $table_name WHERE action_taken = 'blocked' AND created_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR)"
+            );
+            $stats['avg_confidence'] = (int) round((float) $wpdb->get_var(
+                "SELECT AVG(abuseipdb_score) FROM $table_name WHERE action_taken = 'blocked' AND abuseipdb_score IS NOT NULL"
+            ));
 
             // Top países esta semana
             $stats['top_countries'] = $wpdb->get_results(

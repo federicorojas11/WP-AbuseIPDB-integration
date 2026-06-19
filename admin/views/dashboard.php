@@ -2,222 +2,203 @@
 /**
  * Vista: Dashboard – WP AbuseIPDB Integration
  *
- * Se encarga de mostrar las métricas principales del plugin.
- *   – Estadísticas generales (consultas API, detecciones, etc.)
- *   – Actividad reciente
- *   – Configuración rápida (API Key y activación)
- *
- * Esta vista depende del controlador AIPDB_Dashboard para los
- * datos vía AJAX y del CSS `admin/css/admin.css` para los estilos.
+ * Resumen de actividad: KPIs, chequeos recientes, lookup manual de IP
+ * y estado de la API. Inspirado en el layout "AbuseIPDB Guardian".
  */
 if (!defined('ABSPATH')) {
-	exit;
+    exit;
 }
 
 $dashboard = new AIPDB_Dashboard();
-$stats = $dashboard->get_dashboard_stats();
+$stats     = $dashboard->get_dashboard_stats();
+
+// Chequeos recientes (reutiliza el handler de detecciones).
+$detections_handler = new AIPDB_Detections();
+$recent = $detections_handler->get_detections(array('per_page' => 6, 'page' => 1));
+$recent_rows = $recent['data'];
+
+// Cálculos de presentación.
+$api_limit  = max(1, (int) $stats['api_limit']);
+$api_used   = (int) $stats['api_calls_today'];
+$api_pct    = min(100, (int) round($api_used / $api_limit * 100));
+$now_ts     = current_time('timestamp');
+$resets_in  = human_time_diff($now_ts, strtotime('tomorrow', $now_ts));
+
+$api_key    = (string) get_option('aipdb_api_key', '');
+$key_mask   = $api_key !== '' ? '&bull;&bull;&bull;&bull;' . esc_html(substr($api_key, -4)) : '&mdash;';
+$api_status = $stats['api_status']; // ok | error | unknown
+$status_cls = $api_status === 'ok' ? 'is-ok' : ($api_status === 'error' ? 'is-error' : '');
+$status_txt = $api_status === 'ok'
+    ? __('Connected', 'wp-abuseipdb-integration')
+    : ($api_status === 'error' ? __('Error', 'wp-abuseipdb-integration') : __('Not verified', 'wp-abuseipdb-integration'));
+$quota_cls  = $api_pct >= 100 ? 'is-full' : ($api_pct >= 80 ? 'is-high' : '');
+
+/**
+ * Helper local: nivel a partir del score.
+ */
+$aipdb_level = function ($score) {
+    $s = (int) $score;
+    return $s >= 75 ? 'high' : ($s >= 25 ? 'medium' : 'low');
+};
 ?>
 <div class="aipdb-dashboard">
 
-	<!-- Tarjetas de estadísticas -->
-	<div class="aipdb-stats-grid">
-		<div class="aipdb-stat-card">
-			<div class="aipdb-stat-icon dashicons dashicons-networking"></div>
-			<div class="aipdb-stat-content">
-<<<<<<< HEAD
-				<h3><?php echo number_format( $stats['api_calls_today'] ); ?></h3>
-				<p><?php _e( 'API calls today', 'wp-abuseipdb-integration' ); ?></p>
-=======
-				<h3><?php echo number_format($stats['api_calls_today']); ?></h3>
-				<p><?php _e('API calls today', 'abuseipdb-wp-integration'); ?></p>
->>>>>>> 39b53601c2a9ab52dff675be235763be9898100c
-			</div>
-		</div>
+    <!-- KPIs -->
+    <div class="aipdb-stats-grid">
+        <div class="aipdb-stat-card">
+            <p class="aipdb-stat-label"><?php _e('IPs checked today', 'wp-abuseipdb-integration'); ?></p>
+            <div class="aipdb-stat-value"><?php echo number_format_i18n($api_used); ?></div>
+            <p class="aipdb-stat-sub"><?php _e('live AbuseIPDB lookups', 'wp-abuseipdb-integration'); ?></p>
+        </div>
 
-		<div class="aipdb-stat-card">
-			<div class="aipdb-stat-icon dashicons dashicons-warning"></div>
-			<div class="aipdb-stat-content">
-<<<<<<< HEAD
-				<h3><?php echo number_format( $stats['total_detections'] ); ?></h3>
-				<p><?php _e( 'Total detections', 'wp-abuseipdb-integration' ); ?></p>
-=======
-				<h3><?php echo number_format($stats['total_detections']); ?></h3>
-				<p><?php _e('Total detections', 'abuseipdb-wp-integration'); ?></p>
->>>>>>> 39b53601c2a9ab52dff675be235763be9898100c
-			</div>
-		</div>
+        <div class="aipdb-stat-card">
+            <p class="aipdb-stat-label"><?php _e('Threats blocked', 'wp-abuseipdb-integration'); ?></p>
+            <div class="aipdb-stat-value is-danger"><?php echo number_format_i18n($stats['blocked_count']); ?></div>
+            <p class="aipdb-stat-sub is-up">
+                <?php printf(
+                    /* translators: %s: number of blocks in the last 24h */
+                    __('+%s in last 24h', 'wp-abuseipdb-integration'),
+                    number_format_i18n($stats['blocked_today'])
+                ); ?>
+            </p>
+        </div>
 
-		<div class="aipdb-stat-card">
-			<div class="aipdb-stat-icon dashicons dashicons-shield-alt"></div>
-			<div class="aipdb-stat-content">
-<<<<<<< HEAD
-				<h3><?php echo number_format( $stats['blocked_ips'] ); ?></h3>
-				<p><?php _e( 'IPs blocked', 'wp-abuseipdb-integration' ); ?></p>
-=======
-				<h3><?php echo number_format($stats['blocked_ips']); ?></h3>
-				<p><?php _e('IPs blocked', 'abuseipdb-wp-integration'); ?></p>
->>>>>>> 39b53601c2a9ab52dff675be235763be9898100c
-			</div>
-		</div>
+        <div class="aipdb-stat-card">
+            <p class="aipdb-stat-label"><?php _e('Avg confidence', 'wp-abuseipdb-integration'); ?></p>
+            <div class="aipdb-stat-value"><?php echo (int) $stats['avg_confidence']; ?><span class="aipdb-stat-unit">%</span></div>
+            <p class="aipdb-stat-sub"><?php _e('of blocked traffic', 'wp-abuseipdb-integration'); ?></p>
+        </div>
 
-		<div class="aipdb-stat-card">
-			<div class="aipdb-stat-icon dashicons dashicons-admin-generic"></div>
-			<div class="aipdb-stat-content">
-				<h3>
-					<?php
-					echo 'ok' === $stats['api_status']
-<<<<<<< HEAD
-						? __( 'Connected', 'wp-abuseipdb-integration' )
-						: __( 'Unknown', 'wp-abuseipdb-integration' );
-					?>
-				</h3>
-				<p><?php _e( 'API status', 'wp-abuseipdb-integration' ); ?></p>
-=======
-						? __('Connected', 'abuseipdb-wp-integration')
-						: __('Unknown', 'abuseipdb-wp-integration');
-					?>
-				</h3>
-				<p><?php _e('API status', 'abuseipdb-wp-integration'); ?></p>
->>>>>>> 39b53601c2a9ab52dff675be235763be9898100c
-			</div>
-		</div>
-	</div><!-- .aipdb-stats-grid -->
+        <div class="aipdb-stat-card">
+            <p class="aipdb-stat-label"><?php _e('API requests', 'wp-abuseipdb-integration'); ?></p>
+            <div class="aipdb-stat-value">
+                <?php echo number_format_i18n($api_used); ?><span class="aipdb-stat-unit"> / <?php echo number_format_i18n($api_limit); ?></span>
+            </div>
+            <p class="aipdb-stat-sub">
+                <?php printf(
+                    /* translators: %s: human-readable time until reset */
+                    __('resets in %s', 'wp-abuseipdb-integration'),
+                    $resets_in
+                ); ?>
+            </p>
+            <div class="aipdb-stat-bar"><span style="width: <?php echo (int) $api_pct; ?>%;"></span></div>
+        </div>
+    </div><!-- .aipdb-stats-grid -->
 
-	<!-- Configuración rápida -->
-	<div class="aipdb-quick-settings">
-<<<<<<< HEAD
-		<h2><?php _e( 'Quick Setup', 'wp-abuseipdb-integration' ); ?></h2>
-=======
-		<h2><?php _e('Quick Setup', 'abuseipdb-wp-integration'); ?></h2>
->>>>>>> 39b53601c2a9ab52dff675be235763be9898100c
+    <div class="aipdb-dash-grid">
 
-		<form id="aipdb-quick-form" class="aipdb-quick-form">
-			<table class="form-table">
-				<tr>
-					<th scope="row">
-<<<<<<< HEAD
-						<label for="aipdb_api_key"><?php _e( 'AbuseIPDB API Key', 'wp-abuseipdb-integration' ); ?></label>
-=======
-						<label
-							for="aipdb_api_key"><?php _e('AbuseIPDB API Key', 'abuseipdb-wp-integration'); ?></label>
->>>>>>> 39b53601c2a9ab52dff675be235763be9898100c
-					</th>
-					<td>
-						<div class="aipdb-input-flex">
-							<input type="password" id="aipdb_api_key" name="aipdb_api_key"
-								value="<?php echo esc_attr(get_option('aipdb_api_key', '')); ?>"
-								class="regular-text" />
-							<button type="button" class="button aipdb-test-api">
-<<<<<<< HEAD
-								<?php _e( 'Test Connection', 'wp-abuseipdb-integration' ); ?>
-=======
-								<?php _e('Test Connection', 'abuseipdb-wp-integration'); ?>
->>>>>>> 39b53601c2a9ab52dff675be235763be9898100c
-							</button>
-						</div>
-						<div id="aipdb-api-status-message"></div>
-					</td>
-				</tr>
+        <!-- Chequeos recientes -->
+        <div class="aipdb-card">
+            <div class="aipdb-card-head">
+                <h2><?php _e('Recent IP checks', 'wp-abuseipdb-integration'); ?></h2>
+                <a class="aipdb-card-link" href="<?php echo esc_url(admin_url('admin.php?page=aipdb-detections')); ?>">
+                    <?php _e('View firewall log →', 'wp-abuseipdb-integration'); ?>
+                </a>
+            </div>
 
-				<tr>
-<<<<<<< HEAD
-					<th scope="row"><?php _e( 'Enable protection', 'wp-abuseipdb-integration' ); ?></th>
-=======
-					<th scope="row"><?php _e('Enable protection', 'abuseipdb-wp-integration'); ?></th>
->>>>>>> 39b53601c2a9ab52dff675be235763be9898100c
-					<td>
-						<label class="aipdb-switch">
-							<input type="checkbox" name="aipdb_enabled" value="1" <?php checked(get_option('aipdb_enabled', 0), 1); ?> />
-							<span class="aipdb-slider"></span>
-						</label>
-					</td>
-				</tr>
+            <?php if (empty($recent_rows)) : ?>
+                <p class="aipdb-muted"><?php _e('No activity yet. Once protection is enabled, checked IPs will appear here.', 'wp-abuseipdb-integration'); ?></p>
+            <?php else : ?>
+                <table class="aipdb-table">
+                    <thead>
+                        <tr>
+                            <th><?php _e('IP address', 'wp-abuseipdb-integration'); ?></th>
+                            <th><?php _e('Confidence', 'wp-abuseipdb-integration'); ?></th>
+                            <th><?php _e('Event', 'wp-abuseipdb-integration'); ?></th>
+                            <th><?php _e('Action', 'wp-abuseipdb-integration'); ?></th>
+                            <th><?php _e('Checked', 'wp-abuseipdb-integration'); ?></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($recent_rows as $row) :
+                            $score = $row->abuseipdb_score;
+                            $lvl   = $aipdb_level($score);
+                        ?>
+                            <tr>
+                                <td>
+                                    <a class="aipdb-ip" href="https://www.abuseipdb.com/check/<?php echo urlencode($row->ip_address); ?>" target="_blank" rel="noopener noreferrer">
+                                        <?php echo esc_html($row->ip_address); ?>
+                                    </a>
+                                </td>
+                                <td>
+                                    <?php if ($score !== null) : ?>
+                                        <div class="aipdb-conf">
+                                            <span class="aipdb-conf-track">
+                                                <span class="aipdb-conf-fill aipdb-fill-<?php echo esc_attr($lvl); ?>" style="width: <?php echo (int) $score; ?>%;"></span>
+                                            </span>
+                                            <span class="aipdb-conf-pct aipdb-lvl-<?php echo esc_attr($lvl); ?>"><?php echo (int) $score; ?>%</span>
+                                        </div>
+                                    <?php else : ?>
+                                        <span class="aipdb-score-na">N/A</span>
+                                    <?php endif; ?>
+                                </td>
+                                <td>
+                                    <span class="aipdb-event-type"><?php echo esc_html(ucfirst(str_replace('_', ' ', $row->event_type))); ?></span>
+                                </td>
+                                <td>
+                                    <?php if (!empty($row->action_taken)) : ?>
+                                        <span class="aipdb-action aipdb-action-<?php echo esc_attr($row->action_taken); ?>">
+                                            <?php echo esc_html(ucfirst(str_replace('_', ' ', $row->action_taken))); ?>
+                                        </span>
+                                    <?php else : ?>
+                                        <span class="aipdb-action aipdb-action-none"><?php _e('Logged', 'wp-abuseipdb-integration'); ?></span>
+                                    <?php endif; ?>
+                                </td>
+                                <td class="aipdb-muted">
+                                    <?php echo esc_html(human_time_diff(strtotime($row->created_at), $now_ts)); ?> <?php _e('ago', 'wp-abuseipdb-integration'); ?>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            <?php endif; ?>
+        </div>
 
-				<tr>
-					<th scope="row">
-<<<<<<< HEAD
-						<label for="aipdb_abuse_threshold"><?php _e( 'Abuse Threshold', 'wp-abuseipdb-integration' ); ?></label>
-=======
-						<label
-							for="aipdb_abuse_threshold"><?php _e('Abuse Threshold', 'abuseipdb-wp-integration'); ?></label>
->>>>>>> 39b53601c2a9ab52dff675be235763be9898100c
-					</th>
-					<td>
-						<input type="range" id="aipdb_abuse_threshold" name="aipdb_abuse_threshold" min="1" max="100"
-							value="<?php echo esc_attr(get_option('aipdb_abuse_threshold', 70)); ?>">
-						<output class="aipdb-threshold-output">
-							<?php echo esc_html(get_option('aipdb_abuse_threshold', 70)); ?>%
-						</output>
-					</td>
-				</tr>
-			</table>
+        <!-- Columna lateral -->
+        <div class="aipdb-dash-side">
 
-			<p class="submit">
-				<button type="submit" class="button-primary">
-<<<<<<< HEAD
-					<?php _e( 'Save', 'wp-abuseipdb-integration' ); ?>
-=======
-					<?php _e('Save', 'abuseipdb-wp-integration'); ?>
->>>>>>> 39b53601c2a9ab52dff675be235763be9898100c
-				</button>
-			</p>
-		</form>
-	</div><!-- .aipdb-quick-settings -->
+            <!-- Live IP lookup -->
+            <div class="aipdb-card">
+                <h2><?php _e('Live IP lookup', 'wp-abuseipdb-integration'); ?></h2>
+                <p class="aipdb-lookup-hint"><?php _e('Check any address against AbuseIPDB.', 'wp-abuseipdb-integration'); ?></p>
+                <form id="aipdb-ip-check-form" class="aipdb-ip-check-form">
+                    <div class="aipdb-lookup-field">
+                        <input type="text" id="aipdb-check-ip-input" name="ip"
+                               placeholder="<?php esc_attr_e('e.g. 185.220.101.47', 'wp-abuseipdb-integration'); ?>" />
+                        <button type="submit" class="button button-primary">
+                            <?php _e('Check IP', 'wp-abuseipdb-integration'); ?>
+                        </button>
+                    </div>
+                    <div id="aipdb-ip-check-result"></div>
+                </form>
+            </div>
 
-	<!-- Test IP Tool -->
-	<div class="aipdb-test-ip-tool">
-		<h2><?php _e('Test IP Address', 'abuseipdb-wp-integration'); ?></h2>
-		<p><?php _e('Manually check an IP address against AbuseIPDB using the firewall logic.', 'abuseipdb-wp-integration'); ?>
-		</p>
+            <!-- API status -->
+            <div class="aipdb-card">
+                <h2><?php _e('API status', 'wp-abuseipdb-integration'); ?></h2>
+                <div class="aipdb-api-status-row">
+                    <span class="aipdb-status-dot <?php echo esc_attr($status_cls); ?>"><?php echo esc_html($status_txt); ?></span>
+                    <span class="aipdb-api-key-mask"><?php echo $key_mask; // ya escapado ?></span>
+                </div>
+                <p class="aipdb-quota-label">
+                    <?php printf(
+                        /* translators: %s%% used */
+                        __('Daily quota · %s%% used', 'wp-abuseipdb-integration'),
+                        (int) $api_pct
+                    ); ?>
+                </p>
+                <div class="aipdb-quota-bar"><span class="<?php echo esc_attr($quota_cls); ?>" style="width: <?php echo (int) $api_pct; ?>%;"></span></div>
+                <p class="aipdb-quota-foot">
+                    <?php printf(
+                        /* translators: 1: used requests, 2: daily limit */
+                        __('%1$s of %2$s requests', 'wp-abuseipdb-integration'),
+                        number_format_i18n($api_used),
+                        number_format_i18n($api_limit)
+                    ); ?>
+                </p>
+            </div>
 
-		<div class="aipdb-input-flex">
-			<input type="text" id="aipdb_test_ip" placeholder="8.8.8.8" class="regular-text">
-			<button type="button" class="button button-secondary aipdb-check-ip">
-				<?php _e('Check IP', 'abuseipdb-wp-integration'); ?>
-			</button>
-		</div>
-		<div id="aipdb-test-ip-result" style="margin-top: 15px;"></div>
-	</div>
-
-	<!-- Actividad reciente -->
-	<div class="aipdb-recent-activity">
-<<<<<<< HEAD
-		<h2><?php _e( 'Recent Activity', 'wp-abuseipdb-integration' ); ?></h2>
-
-		<?php $recent = $dashboard->get_recent_activity( 8 ); ?>
-		<?php if ( empty( $recent ) ) : ?>
-			<p><?php _e( 'No activity yet.', 'wp-abuseipdb-integration' ); ?></p>
-		<?php else : ?>
-=======
-		<h2><?php _e('Recent Activity', 'abuseipdb-wp-integration'); ?></h2>
-
-		<?php $recent = $dashboard->get_recent_activity(8); ?>
-		<?php if (empty($recent)): ?>
-			<p><?php _e('No activity yet.', 'abuseipdb-wp-integration'); ?></p>
-		<?php else: ?>
->>>>>>> 39b53601c2a9ab52dff675be235763be9898100c
-			<ul class="aipdb-activity-list">
-				<?php foreach ($recent as $item): ?>
-					<li>
-						<span class="dashicons dashicons-<?php echo esc_attr($item['type']); ?>"></span>
-						<strong><?php echo esc_html($item['message']); ?></strong>
-						<small>
-							<?php
-<<<<<<< HEAD
-							echo esc_html( $item['ip'] ) . ' – ';
-							echo human_time_diff( $item['timestamp'], current_time( 'timestamp' ) ) . ' ';
-							_e( 'ago', 'wp-abuseipdb-integration' );
-=======
-							echo esc_html($item['ip']) . ' – ';
-							echo human_time_diff($item['timestamp'], current_time('timestamp')) . ' ';
-							_e('ago', 'abuseipdb-wp-integration');
->>>>>>> 39b53601c2a9ab52dff675be235763be9898100c
-							?>
-						</small>
-					</li>
-				<?php endforeach; ?>
-			</ul>
-		<?php endif; ?>
-	</div><!-- .aipdb-recent-activity -->
+        </div><!-- .aipdb-dash-side -->
+    </div><!-- .aipdb-dash-grid -->
 
 </div><!-- .aipdb-dashboard -->

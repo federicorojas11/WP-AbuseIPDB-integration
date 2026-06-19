@@ -1,25 +1,20 @@
 <?php
-if (!defined('ABSPATH'))
+if (!defined('ABSPATH')) {
     exit;
+}
 
 class AIPDB_Admin
 {
-
-<<<<<<< HEAD
-class AIPDB_Admin {
-
     private $pages = array();
 
     /** @var AIPDB_Security_Rules_Admin */
     public $security_rules_admin;
 
-    public function __construct() {
-=======
-    private $pages = array();
+    /** @var AIPDB_Blocked_IPs */
+    public $blocked_ips_admin;
 
     public function __construct()
     {
->>>>>>> 39b53601c2a9ab52dff675be235763be9898100c
         add_action('admin_menu', array($this, 'add_admin_menu'));
         add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_scripts'));
         add_action('admin_notices', array($this, 'admin_notices'));
@@ -30,7 +25,7 @@ class AIPDB_Admin {
     public function add_admin_menu()
     {
         // Página principal
-        $main_page = add_menu_page(
+        add_menu_page(
             'WP AbuseIPDB Integration',
             'AbuseIPDB',
             'manage_options',
@@ -39,15 +34,10 @@ class AIPDB_Admin {
             'dashicons-shield-alt',
             30
         );
-<<<<<<< HEAD
-        
+
         // Subpáginas. El primer submenu con el mismo slug que el menú principal
         // reemplaza al item auto-generado por add_menu_page para mostrar
         // "Dashboard" en lugar de "AbuseIPDB".
-=======
-
-        // Subpáginas
->>>>>>> 39b53601c2a9ab52dff675be235763be9898100c
         $subpages = array(
             array(
                 'parent_slug' => 'aipdb-dashboard',
@@ -110,65 +100,9 @@ class AIPDB_Admin {
             );
         }
     }
-<<<<<<< HEAD
-    
-    public function enqueue_admin_scripts($hook) {
-=======
-
-    public function register_settings()
-    {
-        // Country Settings
-        register_setting('aipdb_countries', 'aipdb_country_mode');
-        register_setting('aipdb_countries', 'aipdb_allowed_countries');
-        register_setting('aipdb_countries', 'aipdb_blocked_countries');
-        register_setting('aipdb_countries', 'aipdb_geo_provider');
-        register_setting('aipdb_countries', 'aipdb_geo_api_key');
-
-        // Security Rules Settings
-        $monitor_options = array(
-            'aipdb_monitor_login_failures',
-            'aipdb_monitor_suspicious_requests',
-            'aipdb_monitor_comment_spam',
-            'aipdb_monitor_rest_api',
-            'aipdb_monitor_xmlrpc',
-            'aipdb_monitor_user_registration',
-            'aipdb_monitor_404_errors'
-        );
-        foreach ($monitor_options as $option) {
-            register_setting('aipdb_security_rules', $option);
-        }
-
-        // Configuration - General Tab
-        $general_options = [
-            'aipdb_api_key',
-            'aipdb_enabled',
-            'aipdb_abuse_threshold',
-            'aipdb_auto_report',
-            'aipdb_cache_duration',
-            'aipdb_rate_limit_daily',
-            'aipdb_enable_logging',
-            'aipdb_log_retention_days',
-            'aipdb_whitelist_ips'
-        ];
-        foreach ($general_options as $option) {
-            register_setting('aipdb_configuration_general', $option);
-        }
-
-        // Configuration - Advanced Tab
-        $advanced_options = [
-            'aipdb_emergency_mode',
-            'aipdb_debug_mode',
-            'aipdb_custom_user_agent',
-            'aipdb_remove_data_on_uninstall'
-        ];
-        foreach ($advanced_options as $option) {
-            register_setting('aipdb_configuration_advanced', $option);
-        }
-    }
 
     public function enqueue_admin_scripts($hook)
     {
->>>>>>> 39b53601c2a9ab52dff675be235763be9898100c
         // Solo cargar en nuestras páginas
         if (strpos($hook, 'aipdb-') === false) {
             return;
@@ -189,7 +123,6 @@ class AIPDB_Admin {
             true
         );
 
-        // Variables para JavaScript
         wp_localize_script('aipdb-admin-js', 'aipdb_admin', array(
             'ajax_url' => admin_url('admin-ajax.php'),
             'nonce' => wp_create_nonce('aipdb_admin_nonce'),
@@ -203,8 +136,18 @@ class AIPDB_Admin {
                 'api_key_required' => __('API Key required.', 'wp-abuseipdb-integration'),
                 'server_error' => __('Could not connect to server.', 'wp-abuseipdb-integration'),
                 'confirm_delete_detection' => __('Are you sure you want to delete this detection?', 'wp-abuseipdb-integration'),
+                'confirm_bulk_delete' => __('Delete the selected detections?', 'wp-abuseipdb-integration'),
                 'deleting' => __('Deleting...', 'wp-abuseipdb-integration'),
                 'no_detections' => __('No detections found.', 'wp-abuseipdb-integration'),
+                'no_selection' => __('No items selected.', 'wp-abuseipdb-integration'),
+                'total_label' => __('Total:', 'wp-abuseipdb-integration'),
+                'detections_label' => __('detections', 'wp-abuseipdb-integration'),
+                'items_label' => __('items', 'wp-abuseipdb-integration'),
+                'none_label' => __('None', 'wp-abuseipdb-integration'),
+                'check_abuseipdb' => __('Check AbuseIPDB', 'wp-abuseipdb-integration'),
+                'details_label' => __('Details', 'wp-abuseipdb-integration'),
+                'block_ip_label' => __('Block IP', 'wp-abuseipdb-integration'),
+                'delete_label' => __('Delete', 'wp-abuseipdb-integration'),
                 'details_title' => __('Detection details', 'wp-abuseipdb-integration'),
                 'label_ip' => __('IP Address:', 'wp-abuseipdb-integration'),
                 'label_date' => __('Date:', 'wp-abuseipdb-integration'),
@@ -213,6 +156,25 @@ class AIPDB_Admin {
                 'label_score' => __('AbuseIPDB Score:', 'wp-abuseipdb-integration'),
                 'label_country' => __('Country:', 'wp-abuseipdb-integration'),
                 'label_action' => __('Action Taken:', 'wp-abuseipdb-integration'),
+                'label_reports' => __('Total Reports:', 'wp-abuseipdb-integration'),
+
+                // Manual IP check tool
+                'verdict_label' => __('Verdict:', 'wp-abuseipdb-integration'),
+                'verdict_block' => __('Would be blocked', 'wp-abuseipdb-integration'),
+                'verdict_allow' => __('Would be allowed', 'wp-abuseipdb-integration'),
+                'flags_label' => __('Flags:', 'wp-abuseipdb-integration'),
+                'flag_whitelisted' => __('Whitelisted', 'wp-abuseipdb-integration'),
+                'flag_blocked' => __('Manually blocked', 'wp-abuseipdb-integration'),
+
+                // Blocked IPs (Fase 1)
+                'blocking' => __('Blocking...', 'wp-abuseipdb-integration'),
+                'ip_required' => __('IP required.', 'wp-abuseipdb-integration'),
+                'confirm_unblock' => __('Unblock this IP?', 'wp-abuseipdb-integration'),
+                'no_blocked_ips' => __('No IPs are currently blocked.', 'wp-abuseipdb-integration'),
+                'unblock' => __('Unblock', 'wp-abuseipdb-integration'),
+                'permanent' => __('Permanent', 'wp-abuseipdb-integration'),
+                'prompt_block_reason' => __('Reason (optional):', 'wp-abuseipdb-integration'),
+                'default_block_reason' => __('Blocked from detections', 'wp-abuseipdb-integration'),
             ),
         ));
     }
@@ -264,6 +226,7 @@ class AIPDB_Admin {
         require_once AIPDB_PLUGIN_PATH . 'admin/class-security-rules-admin.php';
         require_once AIPDB_PLUGIN_PATH . 'admin/class-detections.php';
         require_once AIPDB_PLUGIN_PATH . 'admin/class-configuration.php';
+        require_once AIPDB_PLUGIN_PATH . 'admin/class-blocked-ips.php';
 
         // Inicializar páginas
         new AIPDB_Dashboard();
@@ -271,11 +234,11 @@ class AIPDB_Admin {
         $this->security_rules_admin = new AIPDB_Security_Rules_Admin();
         new AIPDB_Detections();
         new AIPDB_Configuration();
+        $this->blocked_ips_admin = new AIPDB_Blocked_IPs();
     }
 
     public function admin_notices()
     {
-        // Verificar si la API key está configurada
         if (!get_option('aipdb_api_key') && $this->is_aipdb_page()) {
             ?>
             <div class="notice notice-warning is-dismissible">

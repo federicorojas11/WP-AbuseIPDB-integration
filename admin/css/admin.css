@@ -1,583 +1,617 @@
-/* -> Review <- */
-/* Estilos principales para el admin del plugin */
-.aipdb-admin-wrap {
-    margin: 20px 20px 0 2px;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+/* ============================================================
+   WP AbuseIPDB Integration — Admin UI
+   Design system inspired by the "AbuseIPDB Guardian" layout:
+   clean white cards, uppercase stat labels, pill badges,
+   gradient sliders and a calm, native-WP color palette.
+   ============================================================ */
+
+:root {
+    --aipdb-bg:        #f0f0f1;
+    --aipdb-card:      #ffffff;
+    --aipdb-border:    #e2e4e7;
+    --aipdb-border-2:  #dcdcde;
+    --aipdb-text:      #1d2327;
+    --aipdb-muted:     #646970;
+    --aipdb-faint:     #8c8f94;
+    --aipdb-primary:   #2271b1;
+    --aipdb-primary-d: #135e96;
+    --aipdb-danger:    #d63638;
+    --aipdb-warning:   #bd8600;
+    --aipdb-success:   #00853a;
+    --aipdb-radius:    10px;
+    --aipdb-radius-sm: 6px;
+    --aipdb-shadow:    0 1px 2px rgba(0,0,0,.04), 0 1px 3px rgba(0,0,0,.05);
+    --aipdb-shadow-h:  0 4px 14px rgba(0,0,0,.08);
 }
 
+/* ------------------------------------------------------------
+   Layout shell
+   ------------------------------------------------------------ */
+.aipdb-admin-wrap {
+    margin: 16px 20px 40px 2px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+    color: var(--aipdb-text);
+}
+
+/* Page header — shield + title + subtitle */
 .aipdb-main-title {
     display: flex;
     align-items: center;
     gap: 10px;
-    margin-bottom: 20px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid #ddd;
+    margin: 6px 0 4px;
+    font-size: 23px;
+    font-weight: 600;
 }
-
 .aipdb-icon {
-    color: #2271b1;
-    font-size: 24px;
+    color: var(--aipdb-primary);
+    font-size: 28px;
+    width: 28px;
+    height: 28px;
 }
-
 .aipdb-version {
-    font-size: 12px;
-    color: #666;
-    font-weight: normal;
+    font-size: 11px;
+    color: var(--aipdb-faint);
+    font-weight: 500;
+    padding: 2px 7px;
+    background: #fff;
+    border: 1px solid var(--aipdb-border);
+    border-radius: 999px;
 }
-
+.aipdb-subtitle {
+    margin: 0 0 18px;
+    color: var(--aipdb-muted);
+    font-size: 13px;
+}
 .aipdb-donate-link {
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    padding: 4px 10px;
-    border-radius: 3px;
+    margin-left: auto;
+    padding: 5px 12px;
+    border-radius: 999px;
     font-size: 12px;
-    font-weight: 500;
+    font-weight: 600;
     text-decoration: none;
-    background: #f0f6fc;
-    color: #2271b1;
-    border: 1px solid #c3c4c7;
-    transition: background 0.2s, color 0.2s;
-    margin-left: 8px;
+    background: #fff;
+    color: var(--aipdb-primary);
+    border: 1px solid var(--aipdb-border);
+    transition: background .15s, color .15s, border-color .15s;
 }
+.aipdb-donate-link:hover { background: var(--aipdb-primary); color: #fff; border-color: var(--aipdb-primary); }
+.aipdb-donate-link .dashicons { font-size: 14px; width: 14px; height: 14px; }
 
-.aipdb-donate-link:hover {
-    background: #2271b1;
-    color: #fff;
-    border-color: #2271b1;
-}
+/* The shared content wrapper used to be a boxed panel; now it is
+   transparent so each section can be its own card. */
+.aipdb-content-wrapper { background: transparent; padding: 0; box-shadow: none; }
 
-.aipdb-donate-link .dashicons {
-    font-size: 14px;
-    width: 14px;
-    height: 14px;
-    line-height: 1;
-}
-
-/* Navegación por tabs */
-.aipdb-nav-tabs {
+/* Generic card */
+.aipdb-card {
+    background: var(--aipdb-card);
+    border: 1px solid var(--aipdb-border);
+    border-radius: var(--aipdb-radius);
+    padding: 20px 22px;
     margin-bottom: 20px;
+    box-shadow: var(--aipdb-shadow);
 }
-
-.aipdb-nav-tabs .nav-tab {
-    display: inline-flex;
+.aipdb-card > h2,
+.aipdb-card > h3 {
+    margin: 0 0 14px;
+    font-size: 15px;
+    font-weight: 600;
+    display: flex;
     align-items: center;
-    gap: 5px;
-    position: relative;
+    gap: 8px;
+}
+.aipdb-card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+}
+.aipdb-card-head h2 { margin: 0; font-size: 15px; font-weight: 600; }
+.aipdb-card-link {
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--aipdb-primary);
 }
 
-/* Content wrapper */
-.aipdb-content-wrapper {
-    background: white;
-    padding: 20px;
-    border-radius: 6px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-}
-
-/* Dashboard stats grid */
+/* ------------------------------------------------------------
+   Stat cards
+   ------------------------------------------------------------ */
 .aipdb-stats-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 20px;
-    margin-bottom: 30px;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+    margin-bottom: 20px;
 }
-
 .aipdb-stat-card {
-    background: white;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    padding: 20px;
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    transition: box-shadow 0.2s ease;
+    background: var(--aipdb-card);
+    border: 1px solid var(--aipdb-border);
+    border-radius: var(--aipdb-radius);
+    padding: 18px 20px;
+    box-shadow: var(--aipdb-shadow);
+    transition: box-shadow .2s ease;
 }
-
-.aipdb-stat-card:hover {
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+.aipdb-stat-card:hover { box-shadow: var(--aipdb-shadow-h); }
+.aipdb-stat-label {
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: .04em;
+    color: var(--aipdb-muted);
+    font-weight: 600;
+    margin: 0 0 10px;
 }
-
-.aipdb-stat-icon {
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: #f0f6fc;
-    color: #2271b1;
-    font-size: 24px;
+.aipdb-stat-value {
+    font-size: 30px;
+    font-weight: 700;
+    line-height: 1.05;
+    color: var(--aipdb-text);
 }
-
-.aipdb-stat-icon.api-status-ok {
-    background: #d4edda;
-    color: #155724;
-}
-
-.aipdb-stat-icon.api-status-error {
-    background: #f8d7da;
-    color: #721c24;
-}
-
-.aipdb-stat-content h3 {
-    margin: 0 0 5px 0;
-    font-size: 24px;
-    color: #23282d;
-}
-
-.aipdb-stat-content p {
-    margin: 0 0 5px 0;
-    color: #666;
-    font-size: 14px;
-}
-
-.aipdb-stat-content small {
-    color: #999;
+.aipdb-stat-value .aipdb-stat-unit { font-size: 15px; font-weight: 600; color: var(--aipdb-faint); }
+.aipdb-stat-value.is-danger  { color: var(--aipdb-danger); }
+.aipdb-stat-value.is-success { color: var(--aipdb-success); }
+.aipdb-stat-sub {
+    margin: 8px 0 0;
     font-size: 12px;
+    color: var(--aipdb-muted);
 }
-
-.aipdb-stat-progress {
-    width: 100%;
+.aipdb-stat-sub.is-up { color: var(--aipdb-success); font-weight: 600; }
+.aipdb-stat-sub.is-down { color: var(--aipdb-danger); font-weight: 600; }
+.aipdb-stat-bar {
     height: 4px;
-    background: #eee;
+    background: #ececed;
     border-radius: 2px;
-    margin: 5px 0;
+    margin-top: 12px;
     overflow: hidden;
 }
-
-.aipdb-progress-bar {
-    height: 100%;
-    background: linear-gradient(90deg, #00a32a 0%, #f56e28 70%, #d63384 100%);
-    transition: width 0.3s ease;
-}
-
-/* Quick setup form */
-.aipdb-quick-setup {
-    margin-bottom: 30px;
-}
-
-.aipdb-quick-form {
-    background: #f9f9f9;
-    padding: 20px;
-    border-radius: 6px;
-    border: 1px solid #ddd;
-}
-
-.aipdb-form-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-    margin-bottom: 20px;
-}
-
-.aipdb-form-section label {
+.aipdb-stat-bar > span {
     display: block;
-    margin-bottom: 8px;
-    color: #23282d;
+    height: 100%;
+    border-radius: 2px;
+    background: linear-gradient(90deg, #00a32a 0%, #dba617 65%, #d63638 100%);
 }
 
-.aipdb-input-group {
-    display: flex;
-    gap: 10px;
-    align-items: center;
+/* ------------------------------------------------------------
+   Two-column dashboard grid
+   ------------------------------------------------------------ */
+.aipdb-dash-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 20px;
+    align-items: start;
+}
+.aipdb-dash-side { display: flex; flex-direction: column; gap: 20px; }
+
+/* ------------------------------------------------------------
+   Buttons (primary accent)
+   ------------------------------------------------------------ */
+.aipdb-admin-wrap .button-primary,
+.aipdb-admin-wrap .aipdb-btn-primary {
+    background: var(--aipdb-primary);
+    border-color: var(--aipdb-primary);
+    border-radius: var(--aipdb-radius-sm);
+}
+.aipdb-admin-wrap .button-primary:hover { background: var(--aipdb-primary-d); border-color: var(--aipdb-primary-d); }
+
+/* ------------------------------------------------------------
+   Tables (recent checks / firewall log)
+   ------------------------------------------------------------ */
+.aipdb-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+.aipdb-table thead th {
+    text-align: left;
+    padding: 10px 12px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .03em;
+    color: var(--aipdb-muted);
+    border-bottom: 1px solid var(--aipdb-border);
+    font-weight: 600;
+    background: transparent;
+}
+.aipdb-table tbody td {
+    padding: 12px;
+    border-bottom: 1px solid #f1f1f2;
+    vertical-align: middle;
+}
+.aipdb-table tbody tr:last-child td { border-bottom: none; }
+.aipdb-table tbody tr:hover { background: #fafafb; }
+.aipdb-ip {
+    font-family: Consolas, Menlo, Monaco, "Courier New", monospace;
+    color: var(--aipdb-primary);
+    font-size: 13px;
+}
+.aipdb-muted { color: var(--aipdb-muted); }
+.aipdb-mono { font-family: Consolas, Menlo, Monaco, "Courier New", monospace; }
+
+/* Country cell */
+.aipdb-country-cell { display: inline-flex; align-items: center; gap: 6px; }
+.aipdb-country-code {
+    font-size: 10px;
+    font-weight: 700;
+    color: #50575e;
+    background: #f0f0f1;
+    border-radius: 3px;
+    padding: 1px 5px;
+    letter-spacing: .03em;
 }
 
-.aipdb-input-group .regular-text {
-    flex: 1;
+/* Confidence bar */
+.aipdb-conf { display: flex; align-items: center; gap: 8px; }
+.aipdb-conf-track {
+    width: 84px;
+    height: 6px;
+    background: #e7e7e9;
+    border-radius: 3px;
+    overflow: hidden;
 }
+.aipdb-conf-fill { height: 100%; border-radius: 3px; }
+.aipdb-conf-pct { font-weight: 600; font-size: 12px; min-width: 36px; }
+.aipdb-lvl-high   { color: var(--aipdb-danger); }
+.aipdb-lvl-medium { color: var(--aipdb-warning); }
+.aipdb-lvl-low    { color: var(--aipdb-success); }
+.aipdb-fill-high   { background: var(--aipdb-danger); }
+.aipdb-fill-medium { background: #e8a33d; }
+.aipdb-fill-low    { background: var(--aipdb-success); }
 
-.aipdb-test-api {
+/* ------------------------------------------------------------
+   Pill badges (status / action / threat / score)
+   ------------------------------------------------------------ */
+.aipdb-badge,
+.aipdb-action,
+.aipdb-threat-level,
+.aipdb-score,
+.aipdb-event-type {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.5;
+    text-transform: capitalize;
     white-space: nowrap;
 }
+.aipdb-event-type { background: #f0f0f1; color: #50575e; }
 
-/* Toggle switch */
-.aipdb-toggle-switch {
-    position: relative;
-    display: inline-block;
-    width: 50px;
-    height: 24px;
-}
+/* Action / status colors */
+.aipdb-action-blocked,    .aipdb-badge-blocked    { background: #fce8e8; color: #b32d2e; }
+.aipdb-action-challenged, .aipdb-badge-challenged { background: #fcf3d6; color: #8a6d00; }
+.aipdb-action-logged,     .aipdb-badge-logged,
+.aipdb-action-none                                { background: #f0f0f1; color: #646970; }
+.aipdb-action-allowed,    .aipdb-badge-allowed    { background: #e6f4ea; color: #1e7e34; }
+.aipdb-action-reported,   .aipdb-badge-reported   { background: #e7f0fb; color: #2271b1; }
 
-.aipdb-toggle-switch input[type="checkbox"] {
-    opacity: 0;
-    width: 0;
-    height: 0;
-}
+/* Threat levels */
+.aipdb-threat-low      { background: #e6f4ea; color: #1e7e34; }
+.aipdb-threat-medium   { background: #fcf3d6; color: #8a6d00; }
+.aipdb-threat-high     { background: #fce8e8; color: #b32d2e; }
+.aipdb-threat-critical { background: #b32d2e; color: #fff; }
 
-.aipdb-toggle-label {
-    position: absolute;
-    cursor: pointer;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: #ccc;
-    transition: .4s;
-    border-radius: 24px;
-}
-
-.aipdb-toggle-label:before {
-    position: absolute;
-    content: "";
-    height: 18px;
-    width: 18px;
-    left: 3px;
-    bottom: 3px;
-    background-color: white;
-    transition: .4s;
-    border-radius: 50%;
-}
-
-input:checked + .aipdb-toggle-label {
-    background-color: #2271b1;
-}
-
-input:checked + .aipdb-toggle-label:before {
-    transform: translateX(26px);
-}
-
-/* Range slider */
-.aipdb-range-input {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-}
-
-.aipdb-threshold-slider {
-    flex: 1;
-    height: 6px;
-    background: #ddd;
-    border-radius: 3px;
-    outline: none;
-    -webkit-appearance: none;
-}
-
-.aipdb-threshold-slider::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    background: #2271b1;
-    cursor: pointer;
-}
-
-.aipdb-threshold-slider::-moz-range-thumb {
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    background: #2271b1;
-    cursor: pointer;
-    border: none;
-}
-
-.aipdb-threshold-value {
-    background: #2271b1;
-    color: white;
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 12px;
-    font-weight: bold;
-    min-width: 40px;
-    text-align: center;
-}
-
-/* Activity list */
-.aipdb-activity-list {
-    max-height: 400px;
-    overflow-y: auto;
-}
-
-.aipdb-activity-item {
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-    padding: 12px;
-    border-bottom: 1px solid #f0f0f0;
-}
-
-.aipdb-activity-item:last-child {
-    border-bottom: none;
-}
-
-.aipdb-activity-icon {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: #f0f6fc;
-    color: #2271b1;
-    flex-shrink: 0;
-}
-
-.aipdb-activity-content strong {
-    display: block;
-    margin-bottom: 4px;
-}
-
-.aipdb-activity-content p {
-    margin: 0 0 4px 0;
-    color: #666;
-    font-size: 13px;
-}
-
-.aipdb-activity-content small {
-    color: #999;
-    font-size: 12px;
-}
-
-.aipdb-no-activity {
-    text-align: center;
-    padding: 40px;
-    color: #666;
-}
-
-/* Quick links */
-.aipdb-links-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 15px;
-}
-
-.aipdb-quick-link {
-    display: block;
-    padding: 20px;
-    border: 1px solid #ddd;
+/* Score badges */
+.aipdb-score {
     border-radius: 6px;
-    text-decoration: none;
-    color: #23282d;
-    transition: all 0.2s ease;
-    position: relative;
+    padding: 2px 8px;
+    min-width: 34px;
+    text-align: center;
 }
+.aipdb-score-low    { background: #e6f4ea; color: #1e7e34; }
+.aipdb-score-medium { background: #fcf3d6; color: #8a6d00; }
+.aipdb-score-high   { background: #fce8e8; color: #b32d2e; }
+.aipdb-score-na     { color: #999; }
+.aipdb-country-unknown { color: #999; }
 
-.aipdb-quick-link:hover {
-    border-color: #2271b1;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+/* ------------------------------------------------------------
+   Live IP lookup + API status panels
+   ------------------------------------------------------------ */
+.aipdb-lookup-field { display: flex; flex-direction: column; gap: 10px; }
+.aipdb-lookup-field input[type="text"] { width: 100%; }
+.aipdb-lookup-hint { color: var(--aipdb-muted); font-size: 13px; margin: 0 0 12px; }
+#aipdb-ip-check-result:not(:empty) { margin-top: 14px; }
+
+.aipdb-api-status-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
 }
-
-.aipdb-quick-link .dashicons {
-    font-size: 24px;
-    margin-bottom: 10px;
-    color: #2271b1;
+.aipdb-status-dot {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    font-size: 14px;
 }
-
-.aipdb-quick-link strong {
-    display: block;
-    margin-bottom: 5px;
-    color: #23282d;
+.aipdb-status-dot::before {
+    content: "";
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: #b0b0b3;
 }
-
-.aipdb-quick-link p {
-    margin: 0;
-    color: #666;
+.aipdb-status-dot.is-ok::before    { background: var(--aipdb-success); box-shadow: 0 0 0 3px rgba(0,160,42,.15); }
+.aipdb-status-dot.is-error::before { background: var(--aipdb-danger);  box-shadow: 0 0 0 3px rgba(214,54,56,.15); }
+.aipdb-api-key-mask {
+    font-family: Consolas, Menlo, Monaco, monospace;
+    color: var(--aipdb-faint);
     font-size: 13px;
+    letter-spacing: .08em;
 }
-
-/* Status indicators */
-.aipdb-status-active {
-    color: #00a32a;
-    font-weight: 500;
-}
-
-.aipdb-status-inactive {
-    color: #d63384;
-    font-weight: 500;
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-    .aipdb-stats-grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .aipdb-form-grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .aipdb-links-grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .aipdb-nav-tabs {
-        overflow-x: auto;
-        white-space: nowrap;
-    }
-}
-
-/* Dashboard */
-.aipdb-stats-grid {
-	display:grid;
-	grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
-	gap:20px;
-	margin-bottom:30px
-}
-.aipdb-stat-card{
-	background:#fff;
-	border:1px solid #e2e4e7;
-	border-radius:6px;
-	padding:18px;
-	display:flex;
-	align-items:center;
-	gap:14px
-}
-.aipdb-stat-icon{
-	font-size:30px;
-	color:#2271b1
-}
-.aipdb-stat-content h3{
-	margin:0;
-	font-size:24px
-}
-.aipdb-stat-content p{
-	margin:4px 0 0;
-	color:#666
-}
-
-/* Quick settings */
-#aipdb-api-status-message{
-	margin-top:8px;
-	font-size:13px
-}
-.aipdb-input-flex{
-	display:flex;
-	gap:10px;
-	align-items:center
-}
-/* switch */
-.aipdb-switch{
-	position:relative;
-	display:inline-block;
-	width:46px;
-	height:24px
-}
-.aipdb-switch input{
-	opacity:0;
-	width:0;
-	height:0
-}
-.aipdb-slider{
-	position:absolute;
-	cursor:pointer;
-	top:0;left:0;right:0;bottom:0;
-	background:#ccc;
-	transition:.3s;border-radius:24px
-}
-.aipdb-slider:before{
-	position:absolute;
-	content:"";
-	height:18px;width:18px;
-	left:3px;bottom:3px;
-	background:#fff;
-	transition:.3s;border-radius:50%
-}
-.aipdb-switch input:checked + .aipdb-slider{
-	background:#2271b1
-}
-.aipdb-switch input:checked + .aipdb-slider:before{
-	transform:translateX(22px)
-}
-
-/* Recent activity */
-.aipdb-activity-list{
-	list-style:none;
-	margin:0;padding:0
-}
-.aipdb-activity-list li{
-	padding:10px 0;
-	border-top:1px solid #f0f0f0
-}
-.aipdb-activity-list li:first-child{border-top:0}
-.aipdb-activity-list .dashicons{
-	margin-right:6px;color:#2271b1
-}
-
-
-/* ============================================================
-   Security Rules page
-   ============================================================ */
-.aipdb-security-table {
-    background: #fff;
-    border: 1px solid #ddd;
+.aipdb-quota-label { font-size: 13px; color: var(--aipdb-muted); margin: 0 0 8px; }
+.aipdb-quota-bar {
+    height: 8px;
+    background: #e7e7e9;
     border-radius: 4px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    margin: 20px 0;
+    overflow: hidden;
 }
-.aipdb-security-table table { width: 100%; border-collapse: collapse; }
-.aipdb-security-table th {
-    background: #f8f9fa; padding: 12px 15px; text-align: left;
-    font-weight: 600; border-bottom: 2px solid #dee2e6; color: #495057;
+.aipdb-quota-bar > span {
+    display: block;
+    height: 100%;
+    border-radius: 4px;
+    background: var(--aipdb-primary);
 }
-.aipdb-security-table td {
-    padding: 15px; border-bottom: 1px solid #dee2e6; vertical-align: top;
-}
-.aipdb-security-table tr:last-child td { border-bottom: none; }
-.aipdb-security-table tr:hover { background-color: #f8f9fa; }
-.aipdb-event-title { font-weight: 600; color: #333; font-size: 14px; margin-bottom: 4px; }
-.aipdb-event-description { color: #666; font-size: 12px; line-height: 1.4; }
-.aipdb-toggle-switch { position: relative; display: inline-block; width: 50px; height: 24px; }
-.aipdb-toggle-switch input { opacity: 0; width: 0; height: 0; }
-.aipdb-toggle-slider {
-    position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
-    background-color: #ccc; transition: .4s; border-radius: 24px;
-}
-.aipdb-toggle-slider:before {
-    position: absolute; content: ""; height: 18px; width: 18px;
-    left: 3px; bottom: 3px; background-color: white;
-    transition: .4s; border-radius: 50%;
-}
-input:checked + .aipdb-toggle-slider { background-color: #2271b1; }
-input:checked + .aipdb-toggle-slider:before { transform: translateX(26px); }
-.aipdb-threshold-config {
-    margin-top: 8px; padding: 8px;
-    background: #f0f0f1; border-radius: 3px; font-size: 12px;
-}
-.aipdb-threshold-config input[type="number"] { width: 60px; margin: 0 5px; }
-.aipdb-status-badge {
-    display: inline-block; padding: 2px 8px; border-radius: 3px;
-    font-size: 11px; font-weight: 500; text-transform: uppercase;
-}
-.aipdb-status-enabled { background: #d1ecf1; color: #0c5460; }
-.aipdb-status-disabled { background: #f8d7da; color: #721c24; }
-.aipdb-save-notice {
-    margin-top: 15px; padding: 12px;
-    background: #fff3cd; border: 1px solid #ffeaa7;
-    border-radius: 4px; color: #856404;
-}
+.aipdb-quota-bar > span.is-high { background: var(--aipdb-warning); }
+.aipdb-quota-bar > span.is-full { background: var(--aipdb-danger); }
+.aipdb-quota-foot { font-size: 12px; color: var(--aipdb-faint); margin: 8px 0 0; }
 
-/* ============================================================
-   Detections page
-   ============================================================ */
+/* IP check result table */
+.aipdb-details-table { width: 100%; border-collapse: collapse; }
+.aipdb-details-table td { padding: 7px 10px; border-bottom: 1px solid #f1f1f2; vertical-align: top; font-size: 13px; }
+.aipdb-details-table td:first-child { width: 150px; color: var(--aipdb-muted); }
+
+/* ------------------------------------------------------------
+   Detections / Firewall Log page
+   ------------------------------------------------------------ */
+.aipdb-detections-filters {
+    background: var(--aipdb-card);
+    border: 1px solid var(--aipdb-border);
+    border-radius: var(--aipdb-radius);
+    padding: 14px 16px;
+    margin-bottom: 16px;
+    box-shadow: var(--aipdb-shadow);
+}
+.aipdb-filter-row { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-end; }
+.aipdb-filter-group { display: flex; flex-direction: column; gap: 4px; }
+.aipdb-filter-group label {
+    font-size: 11px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: .03em; color: var(--aipdb-muted);
+}
+.aipdb-filter-row .button { height: 32px; border-radius: var(--aipdb-radius-sm); }
+
+.aipdb-bulk-actions { display: flex; align-items: center; gap: 10px; margin: 0 0 12px; }
+.aipdb-results-count { margin-left: auto; color: var(--aipdb-muted); font-size: 13px; }
+
+.aipdb-detections-table-container {
+    background: var(--aipdb-card);
+    border: 1px solid var(--aipdb-border);
+    border-radius: var(--aipdb-radius);
+    box-shadow: var(--aipdb-shadow);
+    overflow: hidden;
+}
+.aipdb-detections-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.aipdb-detections-table thead th,
+.aipdb-detections-table thead td {
+    text-align: left;
+    padding: 11px 12px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .03em;
+    color: var(--aipdb-muted);
+    border-bottom: 1px solid var(--aipdb-border);
+    font-weight: 600;
+    background: #fbfbfc;
+}
+.aipdb-detections-table tbody td,
+.aipdb-detections-table tbody th { padding: 12px; border-bottom: 1px solid #f1f1f2; vertical-align: middle; }
+.aipdb-detections-table tbody tr:hover { background: #fafafb; }
+.aipdb-detections-table .check-column { width: 32px; }
+.aipdb-detections-table .sortable { cursor: pointer; user-select: none; }
+.aipdb-detections-table .sortable a { text-decoration: none; color: inherit; }
+.aipdb-detections-table .sorting-indicator { opacity: .5; }
+.aipdb-detections-table .aipdb-ip-strong { font-family: Consolas, Menlo, Monaco, monospace; }
+.aipdb-detections-table .row-actions { font-size: 12px; }
+
 .aipdb-actions { white-space: nowrap; }
 .aipdb-actions .button { margin-right: 5px; vertical-align: middle; }
-.aipdb-actions .dashicons {
-    width: 14px; height: 14px; font-size: 14px; line-height: 1; margin-right: 3px;
-}
-.button-link-delete { color: #a00 !important; border-color: #a00 !important; }
-.button-link-delete:hover { background: #a00 !important; color: #fff !important; }
+.aipdb-actions .dashicons { width: 14px; height: 14px; font-size: 14px; line-height: 1; margin-right: 3px; }
+.button-link-delete { color: #b32d2e !important; }
+.button-link-delete:hover { background: #b32d2e !important; color: #fff !important; border-color: #b32d2e !important; }
 
+/* Pagination */
+.aipdb-pagination { display: flex; align-items: center; gap: 12px; margin: 16px 0 0; }
+.aipdb-pagination .displaying-num { color: var(--aipdb-muted); font-size: 13px; }
+.aipdb-pagination .pagination-links { display: flex; flex-wrap: wrap; gap: 4px; }
+.aipdb-page-btn { border-radius: var(--aipdb-radius-sm) !important; }
+.aipdb-page-btn.current {
+    background: var(--aipdb-primary) !important;
+    color: #fff !important;
+    border-color: var(--aipdb-primary) !important;
+}
+
+/* Details modal */
 .aipdb-details-modal-overlay {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0,0,0,0.7); z-index: 100000;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.55);
+    z-index: 100000;
     display: flex; align-items: center; justify-content: center;
 }
 .aipdb-details-modal {
-    background: #fff; border-radius: 5px; padding: 0;
+    background: #fff; border-radius: var(--aipdb-radius);
     max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    box-shadow: 0 10px 40px rgba(0,0,0,.3);
 }
 .aipdb-modal-header {
-    padding: 15px 20px; border-bottom: 1px solid #ddd;
+    padding: 16px 20px; border-bottom: 1px solid var(--aipdb-border);
     display: flex; justify-content: space-between; align-items: center;
 }
-.aipdb-modal-header h3 { margin: 0; font-size: 16px; }
-.aipdb-modal-close { font-size: 24px; cursor: pointer; color: #666; }
+.aipdb-modal-header h3 { margin: 0; font-size: 15px; }
+.aipdb-modal-close { font-size: 24px; cursor: pointer; color: var(--aipdb-muted); line-height: 1; }
 .aipdb-modal-close:hover { color: #000; }
 .aipdb-modal-body { padding: 20px; }
-.aipdb-details-table { width: 100%; border-collapse: collapse; }
-.aipdb-details-table td {
-    padding: 8px 12px; border-bottom: 1px solid #eee; vertical-align: top;
+
+/* ------------------------------------------------------------
+   Settings (Configuration) page
+   ------------------------------------------------------------ */
+.aipdb-settings .aipdb-card { max-width: 880px; }
+.aipdb-settings .aipdb-card .description { color: var(--aipdb-muted); }
+.aipdb-field { margin-bottom: 18px; }
+.aipdb-field:last-child { margin-bottom: 0; }
+.aipdb-field > label.aipdb-field-label {
+    display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px;
 }
-.aipdb-details-table td:first-child { width: 150px; color: #555; }
+.aipdb-field .description { margin: 6px 0 0; font-size: 13px; }
+.aipdb-api-key-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.aipdb-api-key-row input[type="password"],
+.aipdb-api-key-row input[type="text"] { flex: 1; min-width: 280px; }
+.aipdb-plan-line { margin: 10px 0 0; font-size: 13px; color: var(--aipdb-muted); }
+
+/* Gradient threshold slider */
+.aipdb-slider-row { display: flex; align-items: center; gap: 16px; }
+.aipdb-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    flex: 1;
+    height: 8px;
+    border-radius: 6px;
+    background: linear-gradient(90deg, #00a32a 0%, #dba617 50%, #d63638 100%);
+    outline: none;
+}
+.aipdb-slider::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 22px; height: 22px; border-radius: 50%;
+    background: #fff; border: 2px solid var(--aipdb-primary);
+    box-shadow: 0 1px 3px rgba(0,0,0,.25); cursor: pointer;
+}
+.aipdb-slider::-moz-range-thumb {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: #fff; border: 2px solid var(--aipdb-primary);
+    box-shadow: 0 1px 3px rgba(0,0,0,.25); cursor: pointer;
+}
+.aipdb-slider-value {
+    min-width: 56px; text-align: center;
+    background: var(--aipdb-primary); color: #fff;
+    font-weight: 700; font-size: 15px;
+    padding: 6px 10px; border-radius: var(--aipdb-radius-sm);
+}
+.aipdb-slider-scale {
+    display: flex; justify-content: space-between;
+    font-size: 11px; color: var(--aipdb-faint); margin-top: 6px;
+}
+
+/* Toggle rows */
+.aipdb-toggle-row {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 16px; padding: 16px 0; border-top: 1px solid #f1f1f2;
+}
+.aipdb-toggle-row:first-of-type { border-top: none; }
+.aipdb-toggle-row .aipdb-toggle-copy strong { display: block; font-size: 14px; }
+.aipdb-toggle-row .aipdb-toggle-copy span { color: var(--aipdb-muted); font-size: 13px; }
+
+/* Switch control (reused by dashboard + settings) */
+.aipdb-switch { position: relative; display: inline-block; width: 46px; height: 24px; flex-shrink: 0; }
+.aipdb-switch input { opacity: 0; width: 0; height: 0; }
+.aipdb-slider-toggle, .aipdb-slider-sw {
+    position: absolute; cursor: pointer; inset: 0;
+    background: #c3c4c7; transition: .3s; border-radius: 24px;
+}
+.aipdb-slider-toggle:before, .aipdb-slider-sw:before {
+    position: absolute; content: ""; height: 18px; width: 18px;
+    left: 3px; bottom: 3px; background: #fff; transition: .3s; border-radius: 50%;
+}
+.aipdb-switch input:checked + .aipdb-slider-toggle,
+.aipdb-switch input:checked + .aipdb-slider-sw { background: var(--aipdb-primary); }
+.aipdb-switch input:checked + .aipdb-slider-toggle:before,
+.aipdb-switch input:checked + .aipdb-slider-sw:before { transform: translateX(22px); }
+
+.aipdb-settings-actions { display: flex; gap: 10px; margin-top: 4px; }
+
+/* Verified pill on API key */
+.aipdb-verified {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 13px; font-weight: 600; color: var(--aipdb-success);
+}
+.aipdb-verified.is-unknown { color: var(--aipdb-faint); }
+.aipdb-verified::before {
+    content: ""; width: 8px; height: 8px; border-radius: 50%;
+    background: currentColor;
+}
+
+/* ------------------------------------------------------------
+   Security Rules page (kept from prior version, lightly themed)
+   ------------------------------------------------------------ */
+.aipdb-security-table {
+    background: #fff; border: 1px solid var(--aipdb-border);
+    border-radius: var(--aipdb-radius); box-shadow: var(--aipdb-shadow); margin: 16px 0;
+    overflow: hidden;
+}
+.aipdb-security-table table { width: 100%; border-collapse: collapse; }
+.aipdb-security-table th {
+    background: #fbfbfc; padding: 12px 15px; text-align: left;
+    font-weight: 600; border-bottom: 1px solid var(--aipdb-border); color: var(--aipdb-muted);
+    font-size: 11px; text-transform: uppercase; letter-spacing: .03em;
+}
+.aipdb-security-table td { padding: 15px; border-bottom: 1px solid #f1f1f2; vertical-align: top; }
+.aipdb-security-table tr:last-child td { border-bottom: none; }
+.aipdb-security-table tr:hover { background: #fafafb; }
+.aipdb-event-title { font-weight: 600; color: #333; font-size: 14px; margin-bottom: 4px; }
+.aipdb-event-description { color: var(--aipdb-muted); font-size: 12px; line-height: 1.4; }
+.aipdb-toggle-switch { position: relative; display: inline-block; width: 46px; height: 24px; }
+.aipdb-toggle-switch input { opacity: 0; width: 0; height: 0; }
+.aipdb-toggle-slider {
+    position: absolute; cursor: pointer; inset: 0;
+    background: #c3c4c7; transition: .4s; border-radius: 24px;
+}
+.aipdb-toggle-slider:before {
+    position: absolute; content: ""; height: 18px; width: 18px;
+    left: 3px; bottom: 3px; background: #fff; transition: .4s; border-radius: 50%;
+}
+input:checked + .aipdb-toggle-slider { background: var(--aipdb-primary); }
+input:checked + .aipdb-toggle-slider:before { transform: translateX(22px); }
+.aipdb-threshold-config { margin-top: 8px; padding: 8px; background: #f6f7f7; border-radius: 4px; font-size: 12px; }
+.aipdb-threshold-config input[type="number"] { width: 60px; margin: 0 5px; }
+.aipdb-status-badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; text-transform: uppercase; }
+.aipdb-status-enabled { background: #e6f4ea; color: #1e7e34; }
+.aipdb-status-disabled { background: #f0f0f1; color: #646970; }
+.aipdb-save-notice { margin-top: 15px; padding: 12px; background: #fcf9e8; border: 1px solid #f0e6a8; border-radius: 4px; color: #7a6300; }
+
+/* ------------------------------------------------------------
+   Blocked IPs page
+   ------------------------------------------------------------ */
+.aipdb-count-badge {
+    display: inline-block; background: #f0f0f1; color: #2c3338;
+    border-radius: 999px; padding: 2px 10px; font-size: 12px; font-weight: 600;
+}
+.aipdb-inline-form .aipdb-form-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.aipdb-blocklist-table { margin-top: 12px; }
+.aipdb-msg-success {
+    background: #ecf7ed; border-left: 4px solid var(--aipdb-success);
+    padding: 10px 14px; margin: 12px 0 0; border-radius: 2px; color: #1d2327;
+}
+.aipdb-msg-error {
+    background: #fcf0f1; border-left: 4px solid var(--aipdb-danger);
+    padding: 10px 14px; margin: 12px 0 0; border-radius: 2px; color: #1d2327;
+}
+
+/* ------------------------------------------------------------
+   Country Blocking + generic options pages
+   ------------------------------------------------------------ */
+.aipdb-options-page .form-table th { font-weight: 600; }
+.aipdb-input-flex { display: flex; gap: 10px; align-items: center; }
+#aipdb-api-status-message { margin-top: 8px; font-size: 13px; }
+
+/* ------------------------------------------------------------
+   Responsive
+   ------------------------------------------------------------ */
+@media (max-width: 1100px) {
+    .aipdb-dash-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 782px) {
+    .aipdb-stats-grid { grid-template-columns: 1fr 1fr; }
+    .aipdb-filter-group { flex: 1 1 140px; }
+}
+@media (max-width: 600px) {
+    .aipdb-stats-grid { grid-template-columns: 1fr; }
+}

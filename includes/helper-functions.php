@@ -171,6 +171,66 @@ function aipdb_get_status_summary() {
 }
 
 /**
+ * Manual blocklist helpers.
+ *
+ * Storage: option `aipdb_manual_blocklist`, keyed by IP. Each entry:
+ *   array(
+ *     'reason'      => string,
+ *     'blocked_at'  => int (unix timestamp),
+ *     'expires_at'  => int|null (null = permanent),
+ *     'blocked_by'  => int (user ID, 0 if system),
+ *   )
+ */
+function aipdb_get_manual_blocklist() {
+    $list = get_option('aipdb_manual_blocklist', array());
+    return is_array($list) ? $list : array();
+}
+
+function aipdb_block_ip($ip, $reason = '', $expires_at = null) {
+    if (!aipdb_is_valid_ip($ip)) {
+        return false;
+    }
+    $list = aipdb_get_manual_blocklist();
+    $list[$ip] = array(
+        'reason'     => sanitize_text_field($reason),
+        'blocked_at' => time(),
+        'expires_at' => $expires_at, // null = permanent
+        'blocked_by' => function_exists('get_current_user_id') ? (int) get_current_user_id() : 0,
+    );
+    update_option('aipdb_manual_blocklist', $list, false);
+    aipdb_debug_log("Manually blocked IP: {$ip} (reason: {$reason})", 'firewall');
+    return true;
+}
+
+function aipdb_unblock_ip($ip) {
+    $list = aipdb_get_manual_blocklist();
+    if (!isset($list[$ip])) {
+        return false;
+    }
+    unset($list[$ip]);
+    update_option('aipdb_manual_blocklist', $list, false);
+    aipdb_debug_log("Manually unblocked IP: {$ip}", 'firewall');
+    return true;
+}
+
+/**
+ * Returns the blocklist entry if the IP is currently blocked, false otherwise.
+ * Auto-cleans expired entries on access.
+ */
+function aipdb_is_ip_manually_blocked($ip) {
+    $list = aipdb_get_manual_blocklist();
+    if (!isset($list[$ip])) {
+        return false;
+    }
+    $entry = $list[$ip];
+    if (!empty($entry['expires_at']) && (int) $entry['expires_at'] < time()) {
+        aipdb_unblock_ip($ip);
+        return false;
+    }
+    return $entry;
+}
+
+/**
  * Get detection statistics for dashboard
  */
 function aipdb_get_detection_stats() {

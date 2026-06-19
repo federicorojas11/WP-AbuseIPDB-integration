@@ -2,13 +2,29 @@
 if (!defined('ABSPATH')) exit;
 
 $current_page = isset($_GET['page']) ? sanitize_text_field($_GET['page']) : 'aipdb-dashboard';
+
+// Subtítulo contextual: estado de protección + última verificación.
+$is_enabled = (bool) get_option('aipdb_enabled', false);
+$last_check = (int) get_option('aipdb_last_api_check', 0);
+if ($last_check) {
+    $sync = sprintf(
+        /* translators: %s: human-readable time difference */
+        __('last sync %s ago', 'wp-abuseipdb-integration'),
+        human_time_diff($last_check, current_time('timestamp'))
+    );
+} else {
+    $sync = __('no API checks yet', 'wp-abuseipdb-integration');
+}
+$state = $is_enabled
+    ? __('Protection active', 'wp-abuseipdb-integration')
+    : __('Protection disabled', 'wp-abuseipdb-integration');
 ?>
 
 <div class="wrap aipdb-admin-wrap">
     <h1 class="aipdb-main-title">
         <span class="aipdb-icon dashicons dashicons-shield-alt"></span>
         <?php _e('WP AbuseIPDB Integration', 'wp-abuseipdb-integration'); ?>
-        <span class="aipdb-version">v<?php echo AIPDB_VERSION; ?></span>
+        <span class="aipdb-version">v<?php echo esc_html(AIPDB_VERSION); ?></span>
         <a href="https://www.buymeacoffee.com/federicorojas"
            target="_blank"
            rel="noopener noreferrer"
@@ -19,37 +35,8 @@ $current_page = isset($_GET['page']) ? sanitize_text_field($_GET['page']) : 'aip
         </a>
     </h1>
 
-    <!-- Navegación por tabs -->
-    <nav class="nav-tab-wrapper aipdb-nav-tabs">
-        <a href="<?php echo admin_url('admin.php?page=aipdb-dashboard'); ?>"
-           class="nav-tab <?php echo $current_page === 'aipdb-dashboard' ? 'nav-tab-active' : ''; ?>">
-            <span class="dashicons dashicons-dashboard"></span>
-            <?php _e('Dashboard', 'wp-abuseipdb-integration'); ?>
-        </a>
-
-        <a href="<?php echo admin_url('admin.php?page=aipdb-country-blocking'); ?>"
-           class="nav-tab <?php echo $current_page === 'aipdb-country-blocking' ? 'nav-tab-active' : ''; ?>">
-            <span class="dashicons dashicons-admin-site"></span>
-            <?php _e('Country Blocking', 'wp-abuseipdb-integration'); ?>
-        </a>
-
-        <a href="<?php echo admin_url('admin.php?page=aipdb-security-rules'); ?>"
-           class="nav-tab <?php echo $current_page === 'aipdb-security-rules' ? 'nav-tab-active' : ''; ?>">
-            <span class="dashicons dashicons-admin-generic"></span>
-            <?php _e('Security Rules', 'wp-abuseipdb-integration'); ?>
-        </a>
-
-        <a href="<?php echo admin_url('admin.php?page=aipdb-detections'); ?>"
-           class="nav-tab <?php echo $current_page === 'aipdb-detections' ? 'nav-tab-active' : ''; ?>">
-            <span class="dashicons dashicons-list-view"></span>
-            <?php _e('Detections', 'wp-abuseipdb-integration'); ?>
-        </a>
-
-        <a href="<?php echo admin_url('admin.php?page=aipdb-configuration'); ?>"
-           class="nav-tab <?php echo $current_page === 'aipdb-configuration' ? 'nav-tab-active' : ''; ?>">
-            <span class="dashicons dashicons-admin-settings"></span>
-            <?php _e('Configuration', 'wp-abuseipdb-integration'); ?>
-        </a>
-    </nav>
+    <p class="aipdb-subtitle">
+        <?php echo esc_html($state); ?> &middot; <?php echo esc_html($sync); ?>
+    </p>
 
     <div class="aipdb-content-wrapper">

@@ -2,8 +2,8 @@
 /**
  * Plugin Name: WP AbuseIPDB Integration
  * Plugin URI: https://federicorojas.dev/wp-abuseipdb-integration
- * Description: Integración entre WordPress y AbuseIPDB para detección de IPs maliciosas, geolocalización, reglas de seguridad personalizables y monitoreo de detecciones. Estado pre-MVP: el bloqueo en tiempo de request llegará en la próxima fase.
- * Version: 0.1.0
+ * Description: Integración entre WordPress y AbuseIPDB. Bloquea IPs maliciosas en tiempo de request consultando AbuseIPDB y una blocklist manual, con filtro por país (IP2Location), reglas de seguridad personalizables y un panel de detecciones tipo firewall log.
+ * Version: 1.0.0
  * Author: Federico Rojas
  * Author URI: https://federicorojas.dev
  * License: GPL v2 or later
@@ -20,7 +20,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Definir constantes del plugin
-define('AIPDB_VERSION', '0.1.0');
+define('AIPDB_VERSION', '1.0.0');
 define('AIPDB_PLUGIN_FILE', __FILE__);
 define('AIPDB_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('AIPDB_PLUGIN_PATH', plugin_dir_path(__FILE__));
