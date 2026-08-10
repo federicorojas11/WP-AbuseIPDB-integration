@@ -1,0 +1,34 @@
+name: Update composer.lock
+
+on:
+  push:
+    branches:
+      - feat/add-ci-cd-pipeline
+
+jobs:
+  update-lock:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/add-ci-cd-pipeline
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.0'
+          tools: composer:v2
+
+      - name: Update composer.lock
+        run: composer update
+
+      - name: Commit and push updated composer.lock
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "ci: Update composer.lock file"
+          branch: feat/add-ci-cd-pipeline
+          file_pattern: composer.lock
+          commit_user_name: Jules The AI Engineer
+          commit_user_email: jules@example.com
+          commit_author: Jules The AI Engineer <jules@example.com>
