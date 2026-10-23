@@ -74,6 +74,9 @@ No. The plugin is free. If it saves you time or grief, [you can support developm
 - **New manual IP lookup tool** on the dashboard, backed by `AIPDB_Firewall::check_ip_manually()`.
 - **Cache hit/miss tracking** wired into the firewall so the dashboard's cache stats reflect reality.
 - Removed dead "Advanced" settings (`emergency_mode`, `debug_mode`, `custom_user_agent`, proxy/third-party placeholders) and cleaned up stale activation defaults.
+- **Fixed: "Remove data on uninstall" now actually runs.** The cleanup logic lives in `uninstall.php` (an empty `uninstall.php` was silently overriding the registered uninstall hook) and also removes the plugin's upload directories.
+- **Fixed: shared daily API quota.** Security Rules API calls now check and increment the same daily budget as the firewall, and the daily maintenance job no longer wipes the live score cache or resets the quota counter (it prunes expired transients only).
+- Fixed: detections without an AbuseIPDB score are stored as NULL (previously saved as 0%, skewing the average-confidence stat).
 
 ### 0.2.0 — Request-time firewall (MVP)
 - New `AIPDB_Firewall` hooked at `plugins_loaded` priority 1: whitelist → manual blocklist → cached score → live AbuseIPDB. IPs above the threshold get a 403 block page.

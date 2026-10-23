@@ -9,15 +9,13 @@ class AIPDB_Security_Rules {
     
     private static $instance = null;
     private $enabled_events = array();
-    private $api_client;
 
     private $event_to_category_map = [
-        'login_failure' => [18], // Brute-Force
+        'login_failure'      => [18], // Brute-Force
         'suspicious_request' => [15], // Hacking
-        'comment_spam' => [4], // Spam
-        'rest_api' => [21], // Web App Attack
-        'xmlrpc' => [5], // XML-RPC Attack
-        '404_error' => [15], // Hacking
+        'rest_api'           => [21], // Web App Attack
+        'xmlrpc'             => [5],  // XML-RPC Attack
+        '404_error'          => [15], // Hacking
     ];
     
     public static function get_instance() {
@@ -28,7 +26,6 @@ class AIPDB_Security_Rules {
     }
     
     public function __construct() {
-        $this->api_client = new AIPDB_AbuseIPDB_API();
         $this->load_configuration();
         $this->init_hooks();
     }
@@ -368,53 +365,31 @@ class AIPDB_Security_Rules {
     }
 
     private function process_detection($ip, $event_type, $threat_level, $details, $action_taken) {
-        $abuse_score = null;
+        // Read score from the Firewall's transient cache.
+        // The Firewall already checked and cached this IP earlier in the same request,
+        // so no redundant API call is needed here. Score may be null for events that
+        // fire before the Firewall check (e.g. login failures on wp-login.php).
+        $cached = get_transient('aipdb_score_' . md5($ip));
+
+        $abuse_score  = null;
         $country_code = null;
 
-        $cached = get_transient('aipdb_score_' . md5($ip));
-        if ($cached !== false && isset($cached['score'])) {
-            $abuse_score  = $cached['score'];
-            $country_code = $cached['country'] ?? null;
-            aipdb_debug_log("IP {$ip} score {$abuse_score} served from cache", 'api');
-        } else {
-            $api_response = $this->api_client->check_ip($ip);
-            if (!is_wp_error($api_response) && isset($api_response['data'])) {
-                $abuse_score  = $api_response['data']['abuseConfidenceScore'];
-                $country_code = $api_response['data']['countryCode'] ?? null;
-                $hours = max(1, (int) get_option('aipdb_cache_duration', 24));
-                set_transient(
-                    'aipdb_score_' . md5($ip),
-                    array('score' => $abuse_score, 'country' => $country_code, 'checked_at' => time()),
-                    $hours * HOUR_IN_SECONDS
-                );
-                aipdb_debug_log("IP {$ip} has abuse score of {$abuse_score}", 'api');
-            }
+        if (is_array($cached)) {
+            $abuse_score  = isset($cached['score'])   ? (int) $cached['score']   : null;
+            $country_code = isset($cached['country']) ? $cached['country']       : null;
         }
 
-        // Add detection to local DB
-        $detection_id = aipdb_add_detection(
+        aipdb_add_detection(
             $ip,
             $event_type,
             $threat_level,
             $abuse_score,
             $country_code,
             $_SERVER['HTTP_USER_AGENT'] ?? '',
-            $_SERVER['REQUEST_URI'] ?? '',
+            $_SERVER['REQUEST_URI']     ?? '',
             $details,
             $action_taken
         );
-
-        // Auto-report if enabled and score is high enough
-        $auto_report_enabled = get_option('aipdb_auto_report', false);
-        $abuse_threshold = get_option('aipdb_abuse_threshold', 70);
-
-        if ($auto_report_enabled && $abuse_score !== null && $abuse_score >= $abuse_threshold) {
-            $categories = $this->event_to_category_map[$event_type] ?? [];
-            if (!empty($categories)) {
-                $this->api_client->report_ip($ip, $categories, $details);
-                aipdb_debug_log("IP {$ip} auto-reported for event: {$event_type}", 'api');
-            }
-        }
     }
 }
 

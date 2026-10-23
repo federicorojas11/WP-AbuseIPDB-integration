@@ -43,11 +43,12 @@ class AIPDB_Core
             'aipdb_enabled_events' => array(),
 
             // Configuración general
-            'aipdb_cache_duration' => 24,
-            'aipdb_rate_limit_daily' => 900,
-            'aipdb_whitelist_ips' => '',
-            'aipdb_enable_logging' => true,
-            'aipdb_log_retention_days' => 30,
+            'aipdb_cache_duration'          => 24,
+            'aipdb_rate_limit_daily'        => 900,
+            'aipdb_whitelist_ips'           => '',
+            'aipdb_trusted_proxies'         => '',
+            'aipdb_enable_logging'          => true,
+            'aipdb_log_retention_days'      => 30,
             'aipdb_remove_data_on_uninstall' => false,
 
             // Blocklist manual
@@ -133,18 +134,6 @@ class AIPDB_Core
         wp_clear_scheduled_hook('aipdb_daily_maintenance');
     }
 
-    public static function uninstall()
-    {
-        if (get_option('aipdb_remove_data_on_uninstall', false)) {
-            global $wpdb;
-
-            $table_name = $wpdb->prefix . 'aipdb_detections';
-            $wpdb->query("DROP TABLE IF EXISTS $table_name");
-
-            $wpdb->query("DELETE FROM $wpdb->options WHERE option_name LIKE 'aipdb_%'");
-        }
-    }
-
     private function load_dependencies()
     {
         require_once AIPDB_PLUGIN_PATH . 'includes/helper-functions.php';
@@ -203,12 +192,16 @@ class AIPDB_Core
             $retention_days
         ));
 
-        // Limpiar transients antiguos
-        $wpdb->query(
-            "DELETE FROM {$wpdb->options}
-             WHERE option_name LIKE '_transient_aipdb_%'
-             OR option_name LIKE '_transient_timeout_aipdb_%'"
-        );
+        // Limpiar solo transients EXPIRADOS del plugin. Borrar todos
+        // resetearía el contador de cuota diaria y el caché de scores vivo.
+        $wpdb->query($wpdb->prepare(
+            "DELETE t, tt FROM {$wpdb->options} t
+             INNER JOIN {$wpdb->options} tt
+                ON tt.option_name = CONCAT('_transient_timeout_', SUBSTRING(t.option_name, 12))
+             WHERE t.option_name LIKE '\\_transient\\_aipdb\\_%'
+               AND tt.option_value < %d",
+            time()
+        ));
 
         // Limpiar manual blocklist de entradas expiradas (Fase 1)
         $blocklist = get_option('aipdb_manual_blocklist', array());

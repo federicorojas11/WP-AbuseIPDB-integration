@@ -36,7 +36,5 @@ register_deactivation_hook(__FILE__, array('AIPDB_Core', 'deactivate'));
 // Inicializar el plugin
 add_action('plugins_loaded', array('AIPDB_Core', 'init'));
 
-// Hook de desinstalación
-if (function_exists('register_uninstall_hook')) {
-    register_uninstall_hook(__FILE__, array('AIPDB_Core', 'uninstall'));
-}
+// La desinstalación se maneja en uninstall.php (tiene precedencia sobre
+// register_uninstall_hook cuando el archivo existe).

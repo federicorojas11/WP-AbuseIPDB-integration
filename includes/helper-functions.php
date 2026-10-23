@@ -43,23 +43,34 @@ function aipdb_add_detection($ip_address, $event_type, $threat_level, $abuseipdb
     global $wpdb;
     
     $table_name = $wpdb->prefix . 'aipdb_detections';
-    
-    $result = $wpdb->insert(
-        $table_name,
-        array(
-            'ip_address' => $ip_address,
-            'event_type' => $event_type,
-            'threat_level' => $threat_level,
-            'abuseipdb_score' => $abuseipdb_score,
-            'country_code' => $country_code,
-            'user_agent' => $user_agent,
-            'request_uri' => $request_uri,
-            'detection_details' => $detection_details,
-            'action_taken' => $action_taken,
-            'created_at' => current_time('mysql')
-        ),
-        array('%s', '%s', '%s', '%d', '%s', '%s', '%s', '%s', '%s', '%s')
+
+    // Construir columnas dinámicamente: wpdb convierte null con formato
+    // en 0/'' — omitir las columnas nulas preserva el NULL de la DB
+    // (un score NULL es "N/A", no 0%).
+    $data = array(
+        'ip_address'   => array($ip_address, '%s'),
+        'event_type'   => array($event_type, '%s'),
+        'threat_level' => array($threat_level, '%s'),
+        'abuseipdb_score'   => array($abuseipdb_score, '%d'),
+        'country_code'      => array($country_code, '%s'),
+        'user_agent'        => array($user_agent, '%s'),
+        'request_uri'       => array($request_uri, '%s'),
+        'detection_details' => array($detection_details, '%s'),
+        'action_taken'      => array($action_taken, '%s'),
+        'created_at'        => array(current_time('mysql'), '%s'),
     );
+
+    $columns = array();
+    $formats = array();
+    foreach ($data as $column => $pair) {
+        if ($pair[0] === null) {
+            continue;
+        }
+        $columns[$column] = $pair[0];
+        $formats[] = $pair[1];
+    }
+
+    $result = $wpdb->insert($table_name, $columns, $formats);
     
     if ($result !== false) {
         aipdb_debug_log("Detection added: IP {$ip_address}, Type: {$event_type}, Threat: {$threat_level}", 'detection');
@@ -77,26 +88,215 @@ function aipdb_is_valid_ip($ip) {
 }
 
 /**
- * Get client IP address
+ * Return the real client IP safely.
+ *
+ * Rules:
+ * - REMOTE_ADDR is always the base source of truth.
+ * - Forwarded headers (X-Forwarded-For, CF-Connecting-IP, etc.) are only
+ *   trusted when the immediate peer (REMOTE_ADDR) is in the configured
+ *   trusted proxy list. This prevents attackers from spoofing their IP by
+ *   injecting arbitrary forwarded headers.
+ * - Trusted proxies can be configured as exact IPs or CIDR ranges.
  */
 function aipdb_get_client_ip() {
-    $headers = [
+    $remote_addr = aipdb_normalize_ip($_SERVER['REMOTE_ADDR'] ?? '');
+
+    $trusted_proxies = aipdb_get_trusted_proxies();
+
+    // No trusted proxies configured: use REMOTE_ADDR only and ignore all
+    // forwarded headers. Log a debug notice if forwarded headers are present.
+    if (empty($trusted_proxies)) {
+        if (!empty($_SERVER['HTTP_X_FORWARDED_FOR']) || !empty($_SERVER['HTTP_CF_CONNECTING_IP'])) {
+            aipdb_debug_log(
+                'Forwarded IP headers ignored: no trusted proxies configured. REMOTE_ADDR=' . ($remote_addr ?: 'unknown'),
+                'security'
+            );
+        }
+        return $remote_addr ?: '0.0.0.0';
+    }
+
+    // If the immediate peer is NOT a trusted proxy, ignore all forwarded headers.
+    if (!empty($remote_addr) && !aipdb_is_trusted_proxy_ip($remote_addr, $trusted_proxies)) {
+        aipdb_debug_log(
+            'Forwarded IP headers ignored: REMOTE_ADDR=' . $remote_addr . ' is not a trusted proxy.',
+            'security'
+        );
+        return $remote_addr;
+    }
+
+    // The immediate peer is a trusted proxy — read forwarded headers.
+    $headers_to_check = array(
         'HTTP_CF_CONNECTING_IP',
         'HTTP_X_FORWARDED_FOR',
         'HTTP_X_REAL_IP',
-        'REMOTE_ADDR'
-    ];
-    
-    foreach ($headers as $header) {
-        if (!empty($_SERVER[$header])) {
-            $ip = trim(explode(',', $_SERVER[$header])[0]);
-            if (aipdb_is_valid_ip($ip)) {
-                return $ip;
+        'HTTP_CLIENT_IP',
+    );
+
+    foreach ($headers_to_check as $header) {
+        if (empty($_SERVER[$header])) {
+            continue;
+        }
+
+        $value = $_SERVER[$header];
+
+        if ($header === 'HTTP_X_FORWARDED_FOR' || $header === 'HTTP_CLIENT_IP') {
+            // X-Forwarded-For can be a comma-separated list: client, proxy1, proxy2 ...
+            // The left-most non-proxy IP is the real client.
+            $parts = array_map('trim', explode(',', $value));
+            foreach ($parts as $part) {
+                $normalized = aipdb_normalize_ip($part);
+                if (!empty($normalized) && aipdb_is_valid_ip($normalized)) {
+                    return $normalized;
+                }
             }
+            continue;
+        }
+
+        // Single-value header (CF-Connecting-IP, X-Real-IP)
+        $normalized = aipdb_normalize_ip($value);
+        if (!empty($normalized) && aipdb_is_valid_ip($normalized)) {
+            return $normalized;
         }
     }
-    
-    return $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+
+    return $remote_addr ?: '0.0.0.0';
+}
+
+/**
+ * Normalize an IP string: trim whitespace, strip ports, strip IPv6 zone IDs.
+ * Returns an empty string if the result is not a valid IP.
+ */
+function aipdb_normalize_ip($ip) {
+    if (!is_string($ip)) {
+        return '';
+    }
+
+    $ip = trim($ip);
+    if ($ip === '') {
+        return '';
+    }
+
+    // Handle bracketed IPv6 with optional port: [::1]:1234
+    if (preg_match('/^\[([^\]]+)\](?::\d+)?$/', $ip, $m)) {
+        $ip = $m[1];
+    }
+
+    // Strip IPv6 zone ID: fe80::1%eth0
+    $ip = preg_replace('/%.*$/', '', $ip);
+
+    return filter_var($ip, FILTER_VALIDATE_IP) ? $ip : '';
+}
+
+/**
+ * Return the trusted proxy list from options.
+ * Entries can be exact IPs or CIDR ranges (e.g. "198.51.100.0/24").
+ */
+function aipdb_get_trusted_proxies() {
+    $raw = get_option('aipdb_trusted_proxies', '');
+
+    if (empty($raw)) {
+        return array();
+    }
+
+    // Support both newline-separated (textarea) and array storage.
+    if (is_array($raw)) {
+        $lines = $raw;
+    } else {
+        $lines = preg_split('/[\r\n,]+/', (string) $raw);
+    }
+
+    $clean = array();
+    foreach ($lines as $line) {
+        $line = trim((string) $line);
+        if ($line === '') {
+            continue;
+        }
+        $clean[] = $line;
+    }
+
+    return array_values(array_unique($clean));
+}
+
+/**
+ * Return true when $ip matches any entry in the trusted-proxy list.
+ * Supports exact IP matches and CIDR ranges.
+ */
+function aipdb_is_trusted_proxy_ip($ip, $trusted_proxies = array()) {
+    $ip = aipdb_normalize_ip($ip);
+    if ($ip === '') {
+        return false;
+    }
+
+    if (empty($trusted_proxies)) {
+        $trusted_proxies = aipdb_get_trusted_proxies();
+    }
+
+    foreach ($trusted_proxies as $entry) {
+        $entry = trim((string) $entry);
+        if ($entry === '') {
+            continue;
+        }
+
+        if (strpos($entry, '/') !== false) {
+            if (aipdb_ip_in_cidr($ip, $entry)) {
+                return true;
+            }
+        } elseif (aipdb_normalize_ip($entry) === $ip) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+/**
+ * Check whether an IP address falls within a CIDR block.
+ * Supports both IPv4 and IPv6.
+ */
+function aipdb_ip_in_cidr($ip, $cidr) {
+    $ip    = aipdb_normalize_ip($ip);
+    $cidr  = trim((string) $cidr);
+
+    if ($ip === '' || $cidr === '' || strpos($cidr, '/') === false) {
+        return false;
+    }
+
+    list($subnet, $mask_bits) = explode('/', $cidr, 2);
+    $subnet    = aipdb_normalize_ip($subnet);
+    $mask_bits = (int) $mask_bits;
+
+    if ($subnet === '') {
+        return false;
+    }
+
+    $ip_bin     = @inet_pton($ip);
+    $subnet_bin = @inet_pton($subnet);
+
+    if ($ip_bin === false || $subnet_bin === false) {
+        return false;
+    }
+
+    // Must be the same address family.
+    if (strlen($ip_bin) !== strlen($subnet_bin)) {
+        return false;
+    }
+
+    $addr_len = strlen($ip_bin); // 4 for IPv4, 16 for IPv6
+    $bits     = $addr_len * 8;
+
+    if ($mask_bits < 0 || $mask_bits > $bits) {
+        return false;
+    }
+
+    // Build binary mask.
+    $mask_str = str_repeat('\xff', (int) floor($mask_bits / 8));
+    $remainder = $mask_bits % 8;
+    if ($remainder > 0) {
+        $mask_str .= chr((0xff << (8 - $remainder)) & 0xff);
+    }
+    $mask_str = str_pad($mask_str, $addr_len, "\x00");
+
+    return ($ip_bin & $mask_str) === ($subnet_bin & $mask_str);
 }
 
 /**
@@ -129,6 +329,27 @@ function aipdb_get_country_name($country_code) {
     );
     
     return isset($countries[$country_code]) ? $countries[$country_code] : $country_code;
+}
+
+/**
+ * Daily API quota — shared by the firewall and the security rules engine
+ * so every AbuseIPDB call counts against the same budget.
+ */
+function aipdb_within_quota() {
+    $limit = (int) get_option('aipdb_rate_limit_daily', 900);
+    if ($limit <= 0) {
+        return true; // sin límite configurado
+    }
+    $current = (int) get_transient('aipdb_daily_calls_' . date('Y-m-d'));
+    return $current < $limit;
+}
+
+function aipdb_increment_quota() {
+    $key = 'aipdb_daily_calls_' . date('Y-m-d');
+    $current = (int) get_transient($key);
+    // Mantener el contador vivo el resto del día; DAY_IN_SECONDS
+    // sobrepasa un poco pero es inofensivo.
+    set_transient($key, $current + 1, DAY_IN_SECONDS);
 }
 
 /**

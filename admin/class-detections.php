@@ -66,7 +66,7 @@ class AIPDB_Detections
             $where_values[] = $args['country'];
         }
 
-        if ($args['min_score'] !== '' && $args['min_score'] !== null) {
+        if ($args['min_score'] !== '' && $args['min_score'] !== null && intval($args['min_score']) > 0) {
             $where_clauses[] = "abuseipdb_score >= %d";
             $where_values[] = intval($args['min_score']);
         }
@@ -96,6 +96,13 @@ class AIPDB_Detections
 
         // Obtener resultados con paginación
         $offset = ($args['page'] - 1) * $args['per_page'];
+
+        // Whitelist de columnas ordenables: un orderby inválido rompería el SQL.
+        $sortable = array('id', 'created_at', 'ip_address', 'event_type', 'threat_level', 'abuseipdb_score', 'action_taken');
+        if (!in_array($args['orderby'], $sortable, true)) {
+            $args['orderby'] = 'created_at';
+        }
+        $args['order'] = strtoupper($args['order']) === 'ASC' ? 'ASC' : 'DESC';
         $order_by = sanitize_sql_orderby($args['orderby'] . ' ' . $args['order']);
 
         $sql = "SELECT * FROM $table_name $where_sql ORDER BY $order_by LIMIT %d OFFSET %d";

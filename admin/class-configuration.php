@@ -12,12 +12,12 @@ class AIPDB_Configuration {
             'aipdb_api_key',
             'aipdb_enabled',
             'aipdb_abuse_threshold',
-            'aipdb_auto_report',
             'aipdb_enable_logging',
             'aipdb_log_retention_days',
             'aipdb_cache_duration',
             'aipdb_rate_limit_daily',
             'aipdb_whitelist_ips',
+            'aipdb_trusted_proxies',
             'aipdb_remove_data_on_uninstall',
         );
         foreach ($general_options as $option) {

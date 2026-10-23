@@ -269,22 +269,12 @@ class AIPDB_Firewall
 
     private function within_quota()
     {
-        $limit = (int) get_option('aipdb_rate_limit_daily', 900);
-        if ($limit <= 0) {
-            return true; // no limit configured
-        }
-        $key = 'aipdb_daily_calls_' . date('Y-m-d');
-        $current = (int) get_transient($key);
-        return $current < $limit;
+        return aipdb_within_quota();
     }
 
     private function increment_quota()
     {
-        $key = 'aipdb_daily_calls_' . date('Y-m-d');
-        $current = (int) get_transient($key);
-        // Keep the counter alive for the rest of the day. Using
-        // DAY_IN_SECONDS is a slight overshoot but harmless.
-        set_transient($key, $current + 1, DAY_IN_SECONDS);
+        aipdb_increment_quota();
     }
 
     /**
