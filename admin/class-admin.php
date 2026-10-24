@@ -49,8 +49,8 @@ class AIPDB_Admin
             ),
             array(
                 'parent_slug' => 'aipdb-dashboard',
-                'page_title' => 'Country Blocking - AbuseIPDB',
-                'menu_title' => 'Country Blocking',
+                'page_title' => 'Country Filtering - AbuseIPDB',
+                'menu_title' => 'Country Filtering',
                 'capability' => 'manage_options',
                 'menu_slug' => 'aipdb-country-blocking',
                 'function' => array($this, 'display_admin_page')

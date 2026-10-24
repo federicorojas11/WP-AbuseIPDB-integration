@@ -615,3 +615,192 @@ input:checked + .aipdb-toggle-slider:before { transform: translateX(22px); }
 @media (max-width: 600px) {
     .aipdb-stats-grid { grid-template-columns: 1fr; }
 }
+
+/* ------------------------------------------------------------
+   Dual-panel Country Picker
+   ------------------------------------------------------------ */
+.aipdb-country-picker {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    max-width: 680px;
+}
+
+/* Each panel (available / trusted) */
+.aipdb-cp-panel {
+    flex: 1 1 0;
+    min-width: 0;
+    border: 1px solid var(--aipdb-border);
+    border-radius: var(--aipdb-radius-sm);
+    background: var(--aipdb-card);
+    box-shadow: var(--aipdb-shadow);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Panel header */
+.aipdb-cp-header {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 10px 12px 8px;
+    background: #f6f7f7;
+    border-bottom: 1px solid var(--aipdb-border);
+}
+.aipdb-cp-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    color: var(--aipdb-muted);
+}
+
+/* Search filter */
+.aipdb-cp-search {
+    width: 100%;
+    box-sizing: border-box;
+    font-size: 12px !important;
+    padding: 4px 8px !important;
+    border: 1px solid var(--aipdb-border) !important;
+    border-radius: var(--aipdb-radius-sm) !important;
+    background: #fff !important;
+    color: var(--aipdb-text) !important;
+    box-shadow: none !important;
+}
+.aipdb-cp-search:focus {
+    border-color: var(--aipdb-primary) !important;
+    outline: none !important;
+    box-shadow: 0 0 0 2px rgba(34,113,177,.18) !important;
+}
+
+/* Scrollable list */
+.aipdb-cp-list {
+    list-style: none;
+    margin: 0;
+    padding: 4px 0;
+    height: 260px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+/* Individual item */
+.aipdb-cp-item {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 5px 10px;
+    cursor: grab;
+    font-size: 13px;
+    color: var(--aipdb-text);
+    border-bottom: 1px solid transparent;
+    transition: background .12s, border-color .12s;
+    user-select: none;
+}
+.aipdb-cp-item:hover {
+    background: #f0f4f8;
+    border-bottom-color: var(--aipdb-border);
+}
+.aipdb-cp-item.aipdb-cp-selected {
+    background: #e8f0fb;
+    border-bottom-color: #c3d9f5;
+}
+.aipdb-cp-item.aipdb-cp-dragging {
+    opacity: .45;
+    cursor: grabbing;
+}
+.aipdb-cp-item.aipdb-cp-drag-over {
+    background: #dbeafe;
+    border-top: 2px solid var(--aipdb-primary);
+}
+.aipdb-cp-item[style*="display: none"] { display: none !important; }
+
+/* Country code badge */
+.aipdb-cp-flag {
+    flex-shrink: 0;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .04em;
+    color: #fff;
+    background: var(--aipdb-primary);
+    border-radius: 3px;
+    padding: 1px 5px;
+    line-height: 16px;
+}
+[data-side="trusted"] .aipdb-cp-flag {
+    background: var(--aipdb-success);
+}
+
+.aipdb-cp-name {
+    flex: 1 1 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Arrow action icon (appears on hover) */
+.aipdb-cp-action {
+    flex-shrink: 0;
+    font-size: 16px;
+    line-height: 1;
+    color: var(--aipdb-faint);
+    opacity: 0;
+    transition: opacity .15s, color .15s;
+    cursor: pointer;
+}
+.aipdb-cp-item:hover .aipdb-cp-action {
+    opacity: 1;
+}
+.aipdb-cp-add:hover  { color: var(--aipdb-success); }
+.aipdb-cp-remove:hover { color: var(--aipdb-danger); }
+
+/* Center controls column */
+.aipdb-cp-controls {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    align-self: center;
+    padding: 4px 0;
+}
+.aipdb-cp-btn {
+    font-size: 17px !important;
+    line-height: 1 !important;
+    padding: 4px 8px !important;
+    min-width: 34px !important;
+    min-height: 34px !important;
+    cursor: pointer !important;
+    border-radius: var(--aipdb-radius-sm) !important;
+}
+
+/* Drop-zone highlight on the UL itself */
+.aipdb-cp-list.aipdb-cp-drop-active {
+    background: #f0f7ff;
+    outline: 2px dashed var(--aipdb-primary);
+    outline-offset: -2px;
+}
+
+/* Empty state */
+.aipdb-cp-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--aipdb-faint);
+    font-size: 12px;
+    font-style: italic;
+    pointer-events: none;
+}
+
+@media (max-width: 782px) {
+    .aipdb-country-picker {
+        flex-direction: column;
+        max-width: 340px;
+    }
+    .aipdb-cp-controls {
+        flex-direction: row;
+        align-self: stretch;
+        justify-content: center;
+    }
+    .aipdb-cp-list { height: 160px; }
+}

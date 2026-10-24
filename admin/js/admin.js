@@ -678,4 +678,178 @@ jQuery(document).ready(function ($) {
             $notice.fadeOut(400, function () { $(this).remove(); });
         }, 5000);
     }
+
+    /* ------------------------------------------------------------------
+     * Dual-panel Country Picker
+     * ------------------------------------------------------------------ */
+    (function () {
+        var $picker = $('#aipdb-country-picker');
+        if (!$picker.length) return;
+
+        var $availList  = $('#aipdb-available-list');
+        var $trustList  = $('#aipdb-trusted-list');
+        var $hiddenSel  = $('#aipdb_trusted_countries');
+        var dragSrc     = null; // the li being dragged
+
+        /* ---- helpers ------------------------------------------------- */
+
+        function syncHiddenSelect() {
+            $hiddenSel.find('option').prop('selected', false);
+            $trustList.find('.aipdb-cp-item').each(function () {
+                var code = $(this).data('code');
+                $hiddenSel.find('option[value="' + code + '"]').prop('selected', true);
+            });
+        }
+
+        function showEmpty($list) {
+            if (!$list.find('.aipdb-cp-item:not([style*="display: none"])').length &&
+                !$list.find('.aipdb-cp-empty').length) {
+                $list.append('<li class="aipdb-cp-empty">—</li>');
+            } else if ($list.find('.aipdb-cp-item:not([style*="display: none"])').length) {
+                $list.find('.aipdb-cp-empty').remove();
+            }
+        }
+
+        function moveItem($item, $target) {
+            $item.removeClass('aipdb-cp-selected aipdb-cp-dragging aipdb-cp-drag-over');
+            // Flip action arrow side
+            if ($target.is($trustList)) {
+                $item.find('.aipdb-cp-action')
+                     .removeClass('aipdb-cp-add').addClass('aipdb-cp-remove')
+                     .attr('title', 'Remove from trusted').html('&#x2190;');
+            } else {
+                $item.find('.aipdb-cp-action')
+                     .removeClass('aipdb-cp-remove').addClass('aipdb-cp-add')
+                     .attr('title', 'Add to trusted').html('&#x2192;');
+            }
+            $target.append($item);
+            showEmpty($availList);
+            showEmpty($trustList);
+            syncHiddenSelect();
+        }
+
+        /* ---- click to select / deselect ------------------------------ */
+        $picker.on('click', '.aipdb-cp-item', function (e) {
+            if ($(e.target).hasClass('aipdb-cp-action')) return;
+            $(this).toggleClass('aipdb-cp-selected');
+        });
+
+        /* ---- double-click to move ------------------------------------ */
+        $picker.on('dblclick', '.aipdb-cp-item', function () {
+            var $item = $(this);
+            var $target = $item.closest('ul').is($availList) ? $trustList : $availList;
+            moveItem($item, $target);
+        });
+
+        /* ---- arrow action icons -------------------------------------- */
+        $picker.on('click', '.aipdb-cp-add', function (e) {
+            e.stopPropagation();
+            moveItem($(this).closest('.aipdb-cp-item'), $trustList);
+        });
+        $picker.on('click', '.aipdb-cp-remove', function (e) {
+            e.stopPropagation();
+            moveItem($(this).closest('.aipdb-cp-item'), $availList);
+        });
+
+        /* ---- center arrow buttons ------------------------------------ */
+        $('#aipdb-move-all-right').on('click', function () {
+            $availList.find('.aipdb-cp-item').each(function () { moveItem($(this), $trustList); });
+        });
+        $('#aipdb-move-selected-right').on('click', function () {
+            $availList.find('.aipdb-cp-item.aipdb-cp-selected').each(function () { moveItem($(this), $trustList); });
+        });
+        $('#aipdb-move-selected-left').on('click', function () {
+            $trustList.find('.aipdb-cp-item.aipdb-cp-selected').each(function () { moveItem($(this), $availList); });
+        });
+        $('#aipdb-move-all-left').on('click', function () {
+            $trustList.find('.aipdb-cp-item').each(function () { moveItem($(this), $availList); });
+        });
+
+        /* ---- drag & drop --------------------------------------------- */
+        $picker.on('dragstart', '.aipdb-cp-item', function (e) {
+            dragSrc = this;
+            $(this).addClass('aipdb-cp-dragging');
+            e.originalEvent.dataTransfer.effectAllowed = 'move';
+            e.originalEvent.dataTransfer.setData('text/plain', $(this).data('code'));
+        });
+
+        $picker.on('dragend', '.aipdb-cp-item', function () {
+            $(this).removeClass('aipdb-cp-dragging aipdb-cp-drag-over');
+            $picker.find('.aipdb-cp-drag-over').removeClass('aipdb-cp-drag-over');
+            $picker.find('.aipdb-cp-list').removeClass('aipdb-cp-drop-active');
+            dragSrc = null;
+        });
+
+        $picker.on('dragover dragenter', '.aipdb-cp-list, .aipdb-cp-item', function (e) {
+            e.preventDefault();
+            e.originalEvent.dataTransfer.dropEffect = 'move';
+            $picker.find('.aipdb-cp-drop-active').removeClass('aipdb-cp-drop-active');
+            $picker.find('.aipdb-cp-drag-over').removeClass('aipdb-cp-drag-over');
+            $(this).closest('.aipdb-cp-list').addClass('aipdb-cp-drop-active');
+            if ($(this).hasClass('aipdb-cp-item') && this !== dragSrc) {
+                $(this).addClass('aipdb-cp-drag-over');
+            }
+        });
+
+        $picker.on('dragleave', '.aipdb-cp-list', function () {
+            $(this).removeClass('aipdb-cp-drop-active');
+        });
+
+        $picker.on('drop', '.aipdb-cp-list, .aipdb-cp-item', function (e) {
+            e.preventDefault();
+            if (!dragSrc) return;
+            var $src    = $(dragSrc);
+            var $target = $(this).closest('.aipdb-cp-list');
+            var $over   = $(this).hasClass('aipdb-cp-item') ? $(this) : null;
+
+            if ($over && $over[0] !== dragSrc) {
+                $over.before($src);
+            } else {
+                $target.append($src);
+            }
+
+            // Flip the action arrow to match the new panel
+            if ($target.is($trustList)) {
+                $src.find('.aipdb-cp-action')
+                    .removeClass('aipdb-cp-add').addClass('aipdb-cp-remove')
+                    .attr('title', 'Remove from trusted').html('&#x2190;');
+            } else {
+                $src.find('.aipdb-cp-action')
+                    .removeClass('aipdb-cp-remove').addClass('aipdb-cp-add')
+                    .attr('title', 'Add to trusted').html('&#x2192;');
+            }
+
+            $src.removeClass('aipdb-cp-dragging aipdb-cp-selected aipdb-cp-drag-over');
+            $target.removeClass('aipdb-cp-drop-active');
+            showEmpty($availList);
+            showEmpty($trustList);
+            syncHiddenSelect();
+        });
+
+        /* ---- live search filter -------------------------------------- */
+        function filterList($input, $list) {
+            var q = $input.val().toLowerCase().trim();
+            $list.find('.aipdb-cp-item').each(function () {
+                var match = !q ||
+                            $(this).data('name').indexOf(q) !== -1 ||
+                            $(this).data('code').toLowerCase().indexOf(q) !== -1;
+                $(this).toggle(match);
+            });
+            showEmpty($list);
+        }
+
+        $('#aipdb-search-available').on('input', function () { filterList($(this), $availList); });
+        $('#aipdb-search-trusted').on('input',   function () { filterList($(this), $trustList); });
+
+        /* ---- initial empty-state check ------------------------------- */
+        showEmpty($availList);
+        showEmpty($trustList);
+
+        /* ---- sync before form submit --------------------------------- */
+        $picker.closest('form').on('submit', function () {
+            syncHiddenSelect();
+        });
+
+    }());
 });
+

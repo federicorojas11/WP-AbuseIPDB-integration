@@ -20,7 +20,7 @@ Each visitor IP is evaluated in this order, stopping at the first match:
 1. **Whitelist** — trusted IPs always pass, no API call.
 2. **Manual blocklist** — IPs you blocked by hand are denied instantly, no API call.
 3. **Score cache** — a recent AbuseIPDB result for that IP is reused (configurable TTL).
-4. **Country filter** *(optional)* — if the IP geolocates to one of your trusted countries (via the bundled IP2Location LITE database), it skips the AbuseIPDB check entirely. This saves API quota for your normal local traffic.
+4. **Country filtering** *(optional)* — if the IP geolocates to one of your trusted countries (via the bundled IP2Location LITE database), the AbuseIPDB check is skipped entirely. This is a policy optimization to save API quota for known-good geographies, not a hard country block.
 5. **Live AbuseIPDB check** — the IP's abuse confidence score is fetched; if it meets your threshold, the request is blocked and logged.
 
 The plugin is **fail-open**: if the AbuseIPDB API errors or the daily quota is spent, visitors are allowed through and the incident is logged. Your site never goes dark because of an upstream dependency.
@@ -30,7 +30,7 @@ The plugin is **fail-open**: if the AbuseIPDB API errors or the daily quota is s
 - **Request-time firewall** hooked at `plugins_loaded` priority 1 — blocks before WordPress finishes booting.
 - **AbuseIPDB API client** for the `/check` and `/report` endpoints, with a daily quota guard and aggressive per-IP caching.
 - **Manual blocklist** with a dedicated **Blocked IPs** page (add/remove, optional expiry) and one-click "Block IP" from any logged detection.
-- **Country filter** powered by the bundled IP2Location LITE database: traffic from countries you trust bypasses the AbuseIPDB lookup, while everyone else is verified. No 30 MB download — the database ships with the plugin.
+- **Country filtering** *(optional)* powered by the bundled IP2Location LITE database: traffic from countries you explicitly trust bypasses the AbuseIPDB lookup, while all other IPs are still verified. This is a policy optimization, not a hard geopolitical block. No 30 MB download — the database ships with the plugin.
 - **Security Rules engine** that turns WordPress security events into detections: failed logins, suspicious requests (path probing, scanner user-agents), comment spam, REST API and XML-RPC abuse, and 404 probing. Detections reuse the firewall's cache to avoid duplicate API calls.
 - **Auto-reporting** of blocked IPs back to AbuseIPDB once they pass your threshold (optional).
 - **Firewall Log** (Detections) — a searchable, sortable table with filters by event type, threat level, **country**, **minimum score**, and date range; bulk delete and bulk whitelist; pagination; and a per-row details view.
@@ -46,7 +46,7 @@ The plugin is **fail-open**: if the AbuseIPDB API errors or the daily quota is s
 2. Activate the plugin from the **Plugins** menu in WordPress.
 3. Go to **AbuseIPDB → Settings** and paste your AbuseIPDB API key, then click **Test Connection**.
 4. Turn on **Enable request-time protection** and set your **Detection threshold**.
-5. (Optional) Configure monitored events under **AbuseIPDB → Security Rules**, trusted countries under **Country Blocking**, and manual entries under **Blocked IPs**.
+5. (Optional) Configure monitored events under **AbuseIPDB → Security Rules**, trusted countries under **Country Filtering**, and manual entries under **Blocked IPs**.
 
 ## Frequently Asked Questions
 
@@ -56,8 +56,10 @@ Yes. Get a free key at [abuseipdb.com](https://www.abuseipdb.com/account/api). T
 **Does it actually block in real time?**
 Yes. Abusive IPs are served a 403 at `plugins_loaded` priority 1 — before the theme or content render.
 
-**How does the country filter work?**
-If enabled, the plugin geolocates the visitor's IP with the bundled IP2Location LITE database. IPs from your **trusted countries** skip the AbuseIPDB call and are allowed; all other IPs are checked against AbuseIPDB as usual. This keeps your API usage focused on foreign/unknown traffic.
+**How does country filtering work?**
+If enabled, the plugin geolocates the visitor's IP with the bundled IP2Location LITE database. IPs from your **trusted countries** skip the AbuseIPDB call and are allowed through; all other IPs are checked against AbuseIPDB as usual. This keeps your API usage focused on foreign or unknown traffic.
+
+> **Important:** Country filtering is a policy optimization, not a hard geopolitical block. If the IP's country cannot be resolved, the plugin continues with the normal AbuseIPDB flow. Use it only if you intentionally want to reduce API calls for geographies you trust.
 
 **Does it work behind Cloudflare or a reverse proxy?**
 Partially. `CF-Connecting-IP` and `X-Forwarded-For` are honored. Trusted-proxy validation (to prevent header spoofing) is on the roadmap.
@@ -68,7 +70,7 @@ No. The plugin is free. If it saves you time or grief, [you can support developm
 ## Changelog
 
 ### 1.0.0 — First stable release
-- **Country filter is now functional.** When enabled, IPs from trusted countries bypass the AbuseIPDB check via the bundled IP2Location LITE database; all other IPs are verified. Removed the dead "coming soon" behavior tab and the risky on-activation 30 MB database download (the database now ships with the plugin).
+- **Country filtering is now functional.** When enabled, IPs from trusted countries bypass the AbuseIPDB check via the bundled IP2Location LITE database; all other IPs are verified. This feature is intended as a policy optimization (reducing API calls for known-good geographies), not a hard country block — IP reputation checks remain active for all countries outside your trusted list. Removed the dead "coming soon" behavior tab and the risky on-activation 30 MB database download (the database now ships with the plugin).
 - **No more duplicate API calls.** The Security Rules engine reuses the firewall's score cache instead of calling AbuseIPDB again for the same IP in the same request.
 - **Redesigned admin UI** in a clean, card-based "Guardian" layout: a KPI dashboard with recent checks, live IP lookup and API status; a Firewall Log with country and minimum-score filters; and a single-screen, no-tabs Settings page. In-page tab navigation was removed in favor of the WordPress sidebar menu.
 - **New manual IP lookup tool** on the dashboard, backed by `AIPDB_Firewall::check_ip_manually()`.
